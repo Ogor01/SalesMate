@@ -1,0 +1,254 @@
+{
+  "typography": {
+    "font-display": {
+      "$value": "Plus Jakarta Sans",
+      "$type": "fontFamily",
+      "$description": "Display / headings / UI"
+    },
+    "font-body": {
+      "$value": "Inter",
+      "$type": "fontFamily",
+      "$description": "Body / interface copy"
+    },
+    "font-mono": {
+      "$value": "DM Mono",
+      "$type": "fontFamily",
+      "$description": "Data / code / labels"
+    },
+    "size-display": {
+      "$value": "1.5rem",
+      "$type": "fontSize",
+      "$description": "Hero headings"
+    },
+    "size-h1": {
+      "$value": "1.25rem",
+      "$type": "fontSize",
+      "$description": "Page titles"
+    },
+    "size-h2": {
+      "$value": "1.05rem",
+      "$type": "fontSize",
+      "$description": "Section headings"
+    },
+    "size-h3": {
+      "$value": "0.95rem",
+      "$type": "fontSize",
+      "$description": "Card headings"
+    },
+    "size-body-lg": {
+      "$value": "0.875rem",
+      "$type": "fontSize",
+      "$description": "Body strong / table headers"
+    },
+    "size-body": {
+      "$value": "0.85rem",
+      "$type": "fontSize",
+      "$description": "Default body"
+    },
+    "size-body-sm": {
+      "$value": "0.82rem",
+      "$type": "fontSize",
+      "$description": "Secondary body / chat"
+    },
+    "size-caption": {
+      "$value": "0.8rem",
+      "$type": "fontSize",
+      "$description": "Descriptions"
+    },
+    "size-label": {
+      "$value": "0.75rem",
+      "$type": "fontSize",
+      "$description": "Stats labels"
+    },
+    "size-micro": {
+      "$value": "0.72rem",
+      "$type": "fontSize",
+      "$description": "Form labels (uppercase)"
+    },
+    "size-mono": {
+      "$value": "0.82rem",
+      "$type": "fontSize",
+      "$description": "Mono data (prices, phones)"
+    },
+    "weight-normal": {
+      "$value": "400",
+      "$type": "fontWeight",
+      "$description": "Regular"
+    },
+    "weight-medium": {
+      "$value": "500",
+      "$type": "fontWeight",
+      "$description": "Medium"
+    },
+    "weight-semibold": {
+      "$value": "600",
+      "$type": "fontWeight",
+      "$description": "Semibold"
+    },
+    "weight-bold": {
+      "$value": "700",
+      "$type": "fontWeight",
+      "$description": "Bold"
+    },
+    "weight-extrabold": {
+      "$value": "800",
+      "$type": "fontWeight",
+      "$description": "Extra bold"
+    }
+  },
+  "spacing": {
+    "space-1": {
+      "$value": "4px",
+      "$type": "spacing",
+      "$description": "Tight pairs"
+    },
+    "space-2": {
+      "$value": "8px",
+      "$type": "spacing",
+      "$description": "Icon + label"
+    },
+    "space-3": {
+      "$value": "12px",
+      "$type": "spacing",
+      "$description": "List items, form fields"
+    },
+    "space-4": {
+      "$value": "16px",
+      "$type": "spacing",
+      "$description": "Card padding compact"
+    },
+    "space-5": {
+      "$value": "20px",
+      "$type": "spacing",
+      "$description": "Card padding standard"
+    },
+    "space-6": {
+      "$value": "24px",
+      "$type": "spacing",
+      "$description": "Page padding / sections"
+    },
+    "space-8": {
+      "$value": "32px",
+      "$type": "spacing",
+      "$description": "Section gaps"
+    },
+    "space-10": {
+      "$value": "40px",
+      "$type": "spacing",
+      "$description": "Large gaps"
+    },
+    "space-12": {
+      "$value": "48px",
+      "$type": "spacing",
+      "$description": "Section breaks"
+    },
+    "space-16": {
+      "$value": "64px",
+      "$type": "spacing",
+      "$description": "Page-level breathing"
+    }
+  },
+  "borderRadius": {
+    "radius-sm": {
+      "$value": "4px",
+      "$type": "borderRadius",
+      "$description": "Tiny badges, progress"
+    },
+    "radius-md": {
+      "$value": "6px",
+      "$type": "borderRadius",
+      "$description": "Tags, chips"
+    },
+    "radius-lg": {
+      "$value": "8px",
+      "$type": "borderRadius",
+      "$description": "Buttons, inputs"
+    },
+    "radius-xl": {
+      "$value": "12px",
+      "$type": "borderRadius",
+      "$description": "Cards, modals"
+    },
+    "radius-2xl": {
+      "$value": "16px",
+      "$type": "borderRadius",
+      "$description": "Large modals"
+    },
+    "radius-full": {
+      "$value": "9999px",
+      "$type": "borderRadius",
+      "$description": "Pills, avatars, toggles"
+    }
+  },
+  "shadow": {
+    "shadow-none": {
+      "$value": "none",
+      "$type": "boxShadow",
+      "$description": "Default cards (border only)"
+    },
+    "shadow-sm": {
+      "$value": "0 1px 2px rgba(0,0,0,0.05)",
+      "$type": "boxShadow",
+      "$description": "Subtle lift"
+    }
+  },
+  "border": {
+    "border-default": {
+      "$value": "1px solid rgba(0,0,0,0.08)",
+      "$type": "border",
+      "$description": "Cards, panels"
+    },
+    "border-sidebar": {
+      "$value": "1px solid rgba(255,255,255,0.06)",
+      "$type": "border",
+      "$description": "Sidebar dividers"
+    },
+    "border-focus": {
+      "$value": "1px solid #25D366",
+      "$type": "border",
+      "$description": "Active inputs, selected"
+    },
+    "border-success": {
+      "$value": "1px solid #BBF7D0",
+      "$type": "border",
+      "$description": "Success banners"
+    },
+    "border-error": {
+      "$value": "1px solid rgba(239,68,68,0.2)",
+      "$type": "border",
+      "$description": "Error banners"
+    },
+    "border-dashed": {
+      "$value": "2px dashed rgba(0,0,0,0.08)",
+      "$type": "border",
+      "$description": "Add-new placeholders"
+    }
+  },
+  "iconSize": {
+    "icon-xs": {
+      "$value": "11px",
+      "$type": "sizing",
+      "$description": "Inline / badge icons"
+    },
+    "icon-sm": {
+      "$value": "13px",
+      "$type": "sizing",
+      "$description": "Compact buttons, table actions"
+    },
+    "icon-md": {
+      "$value": "17px",
+      "$type": "sizing",
+      "$description": "Card containers, nav"
+    },
+    "icon-lg": {
+      "$value": "20px",
+      "$type": "sizing",
+      "$description": "Page header icons"
+    },
+    "icon-xl": {
+      "$value": "24px",
+      "$type": "sizing",
+      "$description": "Logo mark, hero icons"
+    }
+  }
+}

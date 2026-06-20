@@ -1,0 +1,90 @@
+Created At: 2026-06-16T23:12:05Z
+Completed At: 2026-06-16T23:12:05Z
+File Path: `file:///c:/Users/HP/Desktop/SalesMate/app/page.tsx`
+Total Lines: 1010
+Total Bytes: 40550
+Showing lines 801 to 1010
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+801:               }}
+802:             >
+803:               "I used to spend 4 hours a day answering 'is this dress in stock?' and 'delivery fee?'. SalesMate AI now
+804:               handles 90% of my chats. I woke up this morning to 6 new pre-paid orders from Instagram!"
+805:             </p>
+806:             <div>
+807:               <div style={{ fontWeight: "bold", fontSize: "var(--size-body-lg)" }}>Tobi Adesanya</div>
+808:               <div style={{ fontSize: "var(--size-caption)", color: "var(--color-muted-foreground)" }}>
+809:                 Founder, Tobi's Signature Boutique (Lagos, Nigeria)
+810:               </div>
+811:             </div>
+812:           </div>
+813:         </div>
+814:       </section>
+815: 
+816:       {/* SECTION 4: PRICING + FOOTER (100vh) */}
+817:       <section className="landing-section" id="pricing" style={{ backgroundColor: "#F7F8FA" }}>
+818:         <div
+819:           style={{
+820:             maxWidth: "1200px",
+821:             margin: "0 auto",
+822:             width: "100%",
+823:             padding: "0 var(--space-6)",
+824:             height: "100%",
+825:             display: "flex",
+826:             flexDirection: "column",
+827:             justifyContent: "space-between",
+828:             paddingTop: "60px",
+829:             paddingBottom: "20px",
+830:           }}
+831:         >
+832:           {/* Header */}
+833:           <div style={{ textAlign: "center", marginTop: "20px" }}>
+834:             <h2 style={{ fontSize: "1.8rem", color: "var(--color-foreground)", marginBottom: "var(--space-2)" }}>
+835:               Simple, transparent prici
+<truncated 7866 bytes>
+upport channels</li>
+966:                 </ul>
+967:               </div>
+968:               <Link href="/register" className="btn-secondary" style={{ marginTop: "20px", fontSize: "12px", padding: "8px" }}>
+969:                 Contact Sales
+970:               </Link>
+971:             </div>
+972:           </div>
+973: 
+974:           {/* CTA / Footer Area */}
+975:           <div
+976:             style={{
+977:               background: "#0F1117",
+978:               color: "#FFFFFF",
+979:               borderRadius: "var(--radius-xl)",
+980:               padding: "var(--space-5) var(--space-6)",
+981:               display: "flex",
+982:               alignItems: "center",
+983:               justifyContent: "space-between",
+984:               fontSize: "11px",
+985:               border: "var(--border-sidebar)",
+986:             }}
+987:           >
+988:             <div>
+989:               <div style={{ fontWeight: "bold", fontSize: "14px", color: "var(--color-primary)" }}>
+990:                 Ready to let AI sell while you rest?
+991:               </div>
+992:               <div style={{ color: "var(--color-muted-foreground)", marginTop: "2px" }}>
+993:                 Get started today and link your catalog in 10 minutes.
+994:               </div>
+995:             </div>
+996:             <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+997:               <span style={{ color: "var(--color-muted-foreground)" }}>
+998:                 © 2026 SalesMate AI. All rights reserved.
+999:               </span>
+1000:               <Link href="/register" className="btn-primary" style={{ padding: "8px 16px", fontSize: "11px" }}>
+1001:                 Get Started Free
+1002:               </Link>
+1003:             </div>
+1004:           </div>
+1005:         </div>
+1006:       </section>
+1007:     </div>
+1008:   );
+1009: }
+1010: 
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.

@@ -1,0 +1,84 @@
+{
+  "color": {
+    "primary": {
+      "$value": "#25D366",
+      "$type": "color",
+      "$description": "Brand green / WhatsApp primary"
+    },
+    "primary-dark": {
+      "$value": "#1DA851",
+      "$type": "color",
+      "$description": "Green hover / gradient end"
+    },
+    "primary-surface": {
+      "$value": "#F0FDF4",
+      "$type": "color",
+      "$description": "Green tinted surface"
+    },
+    "primary-border": {
+      "$value": "#BBF7D0",
+      "$type": "color",
+      "$description": "Green border"
+    },
+    "primary-text": {
+      "$value": "#15803D",
+      "$type": "color",
+      "$description": "Green text on light bg"
+    },
+    "foreground": {
+      "$value": "#0F1117",
+      "$type": "color",
+      "$description": "Near-black / primary text"
+    },
+    "background": {
+      "$value": "#F7F8FA",
+      "$type": "color",
+      "$description": "Page background"
+    },
+    "card": {
+      "$value": "#FFFFFF",
+      "$type": "color",
+      "$description": "Card / panel surface"
+    },
+    "muted": {
+      "$value": "#F1F3F6",
+      "$type": "color",
+      "$description": "Muted surface / input bg"
+    },
+    "muted-foreground": {
+      "$value": "#6B7280",
+      "$type": "color",
+      "$description": "Secondary text / captions"
+    },
+    "destructive": {
+      "$value": "#EF4444",
+      "$type": "color",
+      "$description": "Alert / error / handoff"
+    },
+    "destructive-surface": {
+      "$value": "#FEF2F2",
+      "$type": "color",
+      "$description": "Error surface background"
+    },
+    "border": {
+      "$value": "rgba(0,0,0,0.08)",
+      "$type": "color",
+      "$description": "Default hairline border"
+    },
+    "sidebar-bg": {
+      "$value": "#0F1117",
+      "$type": "color",
+      "$description": "Sidebar background"
+    },
+    "sidebar-accent": {
+      "$value": "#1A2030",
+      "$type": "color",
+      "$description": "Sidebar active item / pill"
+    },
+    "sidebar-border": {
+      "$value": "rgba(255,255,255,0.06)",
+      "$type": "color",
+      "$description": "Sidebar dividers"
+    }
+  }
+}

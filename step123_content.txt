@@ -1,0 +1,100 @@
+Created At: 2026-06-16T23:04:09Z
+Completed At: 2026-06-16T23:04:09Z
+File Path: `file:///c:/Users/HP/Desktop/SalesMate/app/page.tsx`
+Total Lines: 1010
+Total Bytes: 40550
+Showing lines 1 to 800
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: "use client";
+2: 
+3: import React, { useState, useEffect } from "react";
+4: import Link from "next/link";
+5: import {
+6:   MessageSquare,
+7:   Sparkles,
+8:   Search,
+9:   Users,
+10:   ShieldCheck,
+11:   Zap,
+12:   TrendingUp,
+13:   UserCheck,
+14:   Check,
+15:   ArrowRight,
+16:   Menu,
+17:   X,
+18:   Play,
+19:   RotateCcw,
+20: } from "lucide-react";
+21: 
+22: export default function LandingPage() {
+23:   const [activeSection, setActiveSection] = useState(0);
+24:   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+25: 
+26:   // Interactive WhatsApp Chat Simulator State
+27:   const [chatStep, setChatStep] = useState(0);
+28:   const [chatMessages, setChatMessages] = useState([
+29:     { role: "customer", text: "Hello! Do you have the Lemon Yellow Silk Pants in Size M?", time: "09:41 AM" },
+30:   ]);
+31: 
+32:   const simulateNextChatStep = () => {
+33:     if (chatStep === 0) {
+34:       setChatMessages((prev) => [
+35:         ...prev,
+36:         {
+37:           role: "ai",
+38:           text: "Hi there! Yes, we do! 🌟 The Yellow Silk Pants are currently in stock in Size M (fits waist 28-30 inches). Price is ₦7,500. Delivery is ₦1,500 within Lagos.",
+39:           time: "09:41 AM",
+40:         },
+41:       ]);
+42:       setChatStep(1);
+43:     } else if (chatStep === 1) {
+44:       setChatMessages((prev) => [
+45:         ...prev,
+46:         { role: "customer", text: "Perfect, I want to order. Do you accept bank transfers?", time: "09:42 AM" },
+47:       ]);
+48:       setChatStep(2);
+49:     } else if (chatStep === 2) {
+50:       setChatMessages((prev) => [
+51:         ...p
+<truncated 30689 bytes>
+QR code, authorize webhook credentials, and deploy your rep live.
+762:               </p>
+763:             </div>
+764: 
+765:             <div style={{ padding: "var(--space-4)", borderLeft: "2px solid rgba(255,255,255,0.15)" }}>
+766:               <div style={{ fontSize: "1.2rem", fontWeight: "bold", color: "rgba(255,255,255,0.3)", marginBottom: "8px" }}>
+767:                 04
+768:               </div>
+769:               <h3 style={{ fontSize: "var(--size-h3)", color: "#FFFFFF", marginBottom: "8px" }}>Watch sales happen</h3>
+770:               <p style={{ fontSize: "var(--size-caption)", color: "var(--color-muted-foreground)" }}>
+771:                 Customers browse catalogs and pay directly. AI handles inquiries automatically!
+772:               </p>
+773:             </div>
+774:           </div>
+775: 
+776:           {/* Mock Testimonial Carousel Card */}
+777:           <div
+778:             className="glass-panel"
+779:             style={{
+780:               padding: "var(--space-6)",
+781:               borderRadius: "var(--radius-xl)",
+782:               maxWidth: "680px",
+783:               margin: "0 auto",
+784:               textAlign: "center",
+785:             }}
+786:           >
+787:             <div style={{ display: "flex", justifyContent: "center", gap: "2px", marginBottom: "var(--space-3)" }}>
+788:               {"★★★★★".split("").map((star, i) => (
+789:                 <span key={i} style={{ color: "var(--color-primary)", fontSize: "18px" }}>
+790:                   {star}
+791:                 </span>
+792:               ))}
+793:             </div>
+794:             <p
+795:               style={{
+796:                 fontStyle: "italic",
+797:                 fontSize: "1.1rem",
+798:                 lineHeight: "1.5",
+799:                 marginBottom: "var(--space-4)",
+800:                 color: "#FFFFFF",
+The above content does NOT show the entire file contents. If you need to view any lines of the file which were not shown to complete your task, call this tool again to view those lines.
