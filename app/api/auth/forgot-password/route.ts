@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import crypto from "crypto";
+import { sendPasswordResetEmail } from "@/services/notifications/email";
 
 export async function POST(req: Request) {
   try {
@@ -22,8 +23,14 @@ export async function POST(req: Request) {
       data: { resetToken, resetTokenExpires },
     });
 
-    // In production, send this via email. For MVP, log to console.
-    console.log(`[Forgot Password] Reset link: ${process.env.NEXTAUTH_URL || "http://localhost:3000"}/auth?reset=${resetToken}`);
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    const resetLink = `${baseUrl}/auth?reset=${resetToken}`;
+
+    const result = await sendPasswordResetEmail(email, resetLink, user.businessName);
+
+    if (!result.success) {
+      console.warn(`[Forgot Password] Email send failed for ${email}, link logged: ${resetLink}`);
+    }
 
     return NextResponse.json({ message: "Reset link sent." });
   } catch {

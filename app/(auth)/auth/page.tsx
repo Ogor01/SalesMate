@@ -12,10 +12,11 @@ import {
   Plus,
   Trash2,
   CheckCircle2,
-  QrCode,
   ShoppingBag,
   Cpu,
   Smartphone,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 function AuthContent() {
@@ -29,7 +30,9 @@ function AuthContent() {
   const [forgotSent, setForgotSent] = useState(false);
   const [resetToken, setResetToken] = useState(resetTokenUrl);
   const [newPassword, setNewPassword] = useState("");
+  const [showNewPass, setShowNewPass] = useState(false);
   const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [showNewPassConfirm, setShowNewPassConfirm] = useState(false);
 
   // Shared
   const [error, setError] = useState("");
@@ -38,6 +41,7 @@ function AuthContent() {
   // Login fields
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [showLoginPass, setShowLoginPass] = useState(false);
   const [loginEmailError, setLoginEmailError] = useState("");
   const [loginPassError, setLoginPassError] = useState("");
   const [loginEmailTouched, setLoginEmailTouched] = useState(false);
@@ -57,6 +61,7 @@ function AuthContent() {
   const [passTouched, setPassTouched] = useState(false);
   const [businessName, setBusinessName] = useState("");
   const [password, setPassword] = useState("");
+  const [showRegPass, setShowRegPass] = useState(false);
 
   // Onboarding steps (after registration)
   const [step, setStep] = useState(1);
@@ -77,7 +82,10 @@ function AuthContent() {
   ]);
   const [newFaqQuestion, setNewFaqQuestion] = useState("");
   const [newFaqAnswer, setNewFaqAnswer] = useState("");
-  const [qrScanning, setQrScanning] = useState(false);
+  const [twilioSid, setTwilioSid] = useState("");
+  const [twilioToken, setTwilioToken] = useState("");
+  const [twilioPhone, setTwilioPhone] = useState("");
+  const [twilioSaving, setTwilioSaving] = useState(false);
   const [whatsappConnected, setWhatsappConnected] = useState(false);
 
   const toggleMode = () => {
@@ -263,13 +271,26 @@ function AuthContent() {
     setFaqList((prev) => prev.filter((_, idx) => idx !== index));
   };
 
-  const handleSimulateQRScan = () => {
-    setQrScanning(true);
-    setTimeout(() => {
-      setQrScanning(false);
-      setWhatsappConnected(true);
-      setTimeout(() => setStep(6), 1200);
-    }, 2500);
+  const handleSaveTwilioConfig = async () => {
+    if (!twilioSid || !twilioToken || !twilioPhone) return;
+    setTwilioSaving(true);
+    try {
+      const res = await fetch("/api/settings/whatsapp", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accountSid: twilioSid, authToken: twilioToken, twilioPhoneNumber: twilioPhone }),
+      });
+      if (res.ok) {
+        setWhatsappConnected(true);
+        setTimeout(() => setStep(6), 800);
+      } else {
+        const json = await res.json();
+        setError(json.error?.message || "Failed to save Twilio config.");
+      }
+    } catch {
+      setError("Network error saving Twilio configuration.");
+    } finally {
+      setTwilioSaving(false);
+    }
   };
 
   if (step > 1 && step <= 4) {
@@ -451,34 +472,25 @@ function AuthContent() {
                       <div style={{ width: "48px", height: "48px", borderRadius: "var(--radius-xl)", backgroundColor: "var(--color-primary-surface)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "var(--space-3)" }}>
                         <Smartphone size={24} color="var(--color-primary-text)" />
                       </div>
-                      <h2 style={{ fontSize: "var(--size-h1)", marginBottom: "6px" }}>Connect WhatsApp</h2>
+                      <h2 style={{ fontSize: "var(--size-h1)", marginBottom: "6px" }}>Connect Twilio WhatsApp</h2>
                       <p style={{ color: "var(--color-muted-foreground)", fontSize: "var(--size-caption)", textAlign: "center", maxWidth: "380px" }}>
-                        Scan the WhatsApp Business API pairing code to link your phone number
+                        Enter your Twilio credentials to enable WhatsApp messaging. Get these from the Twilio Console.
                       </p>
                     </div>
-                    <div style={{ textAlign: "center", padding: "var(--space-4) 0" }}>
-                      {qrScanning ? (
-                        <div style={{ height: "180px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--space-3)" }}>
-                          <Loader size={36} className="animate-spin" color="var(--color-primary)" />
-                          <span style={{ fontSize: "var(--size-caption)", color: "var(--color-muted-foreground)" }}>Verifying pairing token...</span>
-                        </div>
-                      ) : (
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "var(--space-4)" }}>
-                          <div style={{ padding: "16px", border: "var(--border-default)", borderRadius: "var(--radius-xl)", background: "#F9FAFB", display: "inline-block", animation: "pulse 2s infinite" }}>
-                            <QrCode size={140} color="#000" />
-                          </div>
-                          <button className="btn-dark" onClick={handleSimulateQRScan} style={{ width: "100%", maxWidth: "260px" }}>I have scanned this code</button>
-                        </div>
-                      )}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", marginBottom: "var(--space-4)" }}>
+                      <input type="text" placeholder="Account SID (AC...)" className="input-field" value={twilioSid} onChange={(e) => setTwilioSid(e.target.value)} />
+                      <input type="password" placeholder="Auth Token" className="input-field" value={twilioToken} onChange={(e) => setTwilioToken(e.target.value)} />
+                      <input type="text" placeholder="Twilio WhatsApp Number (e.g. +14155238886)" className="input-field" value={twilioPhone} onChange={(e) => setTwilioPhone(e.target.value)} />
                     </div>
-                    {!qrScanning && (
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-3)" }}>
-                        <button className="btn-secondary" style={{ padding: "12px 24px" }} onClick={() => setStep(3)}>Back</button>
-                        <button type="button" onClick={() => router.push("/dashboard")} style={{ background: "none", border: "none", color: "var(--color-primary-text)", fontSize: "var(--size-caption)", cursor: "pointer", textDecoration: "none", padding: 0 }}>
-                          Skip for now, I'll do this later
-                        </button>
-                      </div>
-                    )}
+                    <button className="btn-primary" style={{ width: "100%", padding: "12px" }} disabled={twilioSaving || !twilioSid || !twilioToken || !twilioPhone} onClick={handleSaveTwilioConfig}>
+                      {twilioSaving ? <Loader size={18} className="animate-spin" /> : "Connect WhatsApp"}
+                    </button>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "var(--space-3)" }}>
+                      <button className="btn-secondary" style={{ padding: "12px 24px" }} onClick={() => setStep(3)}>Back</button>
+                      <button type="button" onClick={() => router.push("/dashboard")} style={{ background: "none", border: "none", color: "var(--color-primary-text)", fontSize: "var(--size-caption)", cursor: "pointer", textDecoration: "none", padding: 0 }}>
+                        Skip for now, I'll do this later
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div style={{ textAlign: "center", animation: "fadeIn 0.5s ease" }}>
@@ -493,7 +505,7 @@ function AuthContent() {
                       <div style={{ display: "flex", gap: "6px", alignItems: "center" }}><CheckCircle2 size={14} color="var(--color-primary)" /> Business profile saved</div>
                       <div style={{ display: "flex", gap: "6px", alignItems: "center" }}><CheckCircle2 size={14} color="var(--color-primary)" /> Products indexed to database</div>
                       <div style={{ display: "flex", gap: "6px", alignItems: "center" }}><CheckCircle2 size={14} color="var(--color-primary)" /> AI trained with your FAQs</div>
-                      <div style={{ display: "flex", gap: "6px", alignItems: "center" }}><CheckCircle2 size={14} color="var(--color-primary)" /> WhatsApp {whatsappConnected ? "connected" : "configured"}</div>
+                      <div style={{ display: "flex", gap: "6px", alignItems: "center" }}><CheckCircle2 size={14} color="var(--color-primary)" /> Twilio WhatsApp connected</div>
                     </div>
                     <button className="btn-primary" style={{ width: "100%", padding: "12px" }} onClick={() => router.push("/dashboard")}>Launch Dashboard</button>
                   </div>
@@ -556,7 +568,12 @@ function AuthContent() {
                   Forgot password?
                 </button>
               </div>
-              <input type="password" placeholder="••••••••" className="input-field" value={loginPassword} onBlur={() => { setLoginPassTouched(true); if (loginPassword.length === 0) setLoginPassError("This field cannot be empty"); }} onChange={(e) => { setLoginPassword(e.target.value); setLoginPassError(""); }} disabled={loading} required style={{ backgroundColor: loginPassTouched ? "var(--color-muted)" : "#FFFFFF", ...(loginPassError ? { borderColor: "var(--color-destructive)" } : {}) }} />
+              <div style={{ position: "relative" }}>
+                <input type={showLoginPass ? "text" : "password"} placeholder="••••••••" className="input-field" value={loginPassword} onBlur={() => { setLoginPassTouched(true); if (loginPassword.length === 0) setLoginPassError("This field cannot be empty"); }} onChange={(e) => { setLoginPassword(e.target.value); setLoginPassError(""); }} disabled={loading} required style={{ backgroundColor: loginPassTouched ? "var(--color-muted)" : "#FFFFFF", ...(loginPassError ? { borderColor: "var(--color-destructive)" } : {}), paddingRight: "40px" }} />
+                <button type="button" onClick={() => setShowLoginPass(!showLoginPass)} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--color-muted-foreground)", padding: "4px", display: loginPassword.length === 0 ? "none" : "flex" }}>
+                  {showLoginPass ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
               {loginPassError && <span style={{ color: "var(--color-destructive)", fontSize: "var(--size-micro)", marginTop: "4px", display: "block" }}>{loginPassError}</span>}
             </div>
             <button type="submit" className="btn-primary" style={{ width: "100%", padding: "12px", marginTop: "var(--space-2)" }} disabled={loading}>
@@ -624,13 +641,23 @@ function AuthContent() {
               <label style={{ display: "block", fontSize: "var(--size-micro)", textTransform: "none", fontWeight: "normal", color: "var(--color-muted-foreground)", marginBottom: "var(--space-1)" }}>
                 New Password
               </label>
-              <input type="password" placeholder="••••••••" className="input-field" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+              <div style={{ position: "relative" }}>
+                <input type={showNewPass ? "text" : "password"} placeholder="••••••••" className="input-field" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required style={{ paddingRight: "40px" }} />
+                <button type="button" onClick={() => setShowNewPass(!showNewPass)} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--color-muted-foreground)", padding: "4px", display: newPassword.length === 0 ? "none" : "flex" }}>
+                  {showNewPass ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
             <div>
               <label style={{ display: "block", fontSize: "var(--size-micro)", textTransform: "none", fontWeight: "normal", color: "var(--color-muted-foreground)", marginBottom: "var(--space-1)" }}>
                 Confirm Password
               </label>
-              <input type="password" placeholder="••••••••" className="input-field" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} required />
+              <div style={{ position: "relative" }}>
+                <input type={showNewPassConfirm ? "text" : "password"} placeholder="••••••••" className="input-field" value={newPasswordConfirm} onChange={(e) => setNewPasswordConfirm(e.target.value)} required style={{ paddingRight: "40px" }} />
+                <button type="button" onClick={() => setShowNewPassConfirm(!showNewPassConfirm)} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--color-muted-foreground)", padding: "4px", display: newPasswordConfirm.length === 0 ? "none" : "flex" }}>
+                  {showNewPassConfirm ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
             <button type="submit" className="btn-primary" style={{ width: "100%", padding: "12px" }} disabled={loading}>
               {loading ? <Loader size={18} className="animate-spin" /> : "Reset Password"}
@@ -689,7 +716,12 @@ function AuthContent() {
                   <label style={{ fontSize: "var(--size-micro)", textTransform: "none", color: "var(--color-muted-foreground)", display: "block", marginBottom: "4px" }}>
                     Password
                   </label>
-                  <input type="password" placeholder="••••••••" className="input-field" value={password} onChange={(e) => setPassword(e.target.value)} onBlur={() => setPassTouched(true)} required style={{ backgroundColor: passTouched ? "var(--color-muted)" : "#FFFFFF" }} />
+                  <div style={{ position: "relative" }}>
+                    <input type={showRegPass ? "text" : "password"} placeholder="••••••••" className="input-field" value={password} onChange={(e) => setPassword(e.target.value)} onBlur={() => setPassTouched(true)} required style={{ backgroundColor: passTouched ? "var(--color-muted)" : "#FFFFFF", paddingRight: "40px" }} />
+                    <button type="button" onClick={() => setShowRegPass(!showRegPass)} style={{ position: "absolute", right: "10px", top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "var(--color-muted-foreground)", padding: "4px", display: password.length === 0 ? "none" : "flex" }}>
+                      {showRegPass ? <EyeOff size={20} /> : <Eye size={20} />}
+                    </button>
+                  </div>
                   {password.length > 0 && (
                     <div style={{ marginTop: "6px", display: "flex", flexDirection: "column", gap: "3px" }}>
                       {!/[A-Z]/.test(password) ? (

@@ -1,74 +1,84 @@
 import { db } from "@/lib/db";
 
-interface WhatsAppSendResult {
+export interface WhatsAppSendResult {
   success: boolean;
   messageId?: string;
   error?: string;
 }
 
+function getBasicAuth(accountSid: string, authToken: string): string {
+  return Buffer.from(`${accountSid}:${authToken}`).toString("base64");
+}
+
 export async function sendWhatsAppMessage(
   userId: string,
   toPhone: string,
-  messageText: string
+  messageText: string,
+  mediaUrl?: string
 ): Promise<WhatsAppSendResult> {
-  const token = process.env.WHATSAPP_TOKEN;
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
+  const config = await db.whatsAppConfig.findUnique({
+    where: { userId },
+    select: { accountSid: true, authToken: true, twilioPhoneNumber: true },
+  });
 
-  if (!token || !phoneNumberId) {
-    const err = "WhatsApp environment credentials not set up on server.";
+  const accountSid = config?.accountSid || process.env.TWILIO_ACCOUNT_SID;
+  const authToken = config?.authToken || process.env.TWILIO_AUTH_TOKEN;
+  const twilioPhoneNumber = config?.twilioPhoneNumber || process.env.TWILIO_WHATSAPP_NUMBER;
+
+  if (!accountSid || !authToken || !twilioPhoneNumber) {
+    const err = "Twilio credentials not configured for this vendor.";
     console.error(err);
     return { success: false, error: err };
   }
 
-  const cleanPhone = toPhone.replace(/\D/g, "");
-  const url = `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`;
+  const cleanTo = toPhone.startsWith("whatsapp:") ? toPhone : `whatsapp:${toPhone.replace(/[^\d+]/g, "")}`;
+  const cleanFrom = twilioPhoneNumber.startsWith("whatsapp:") ? twilioPhoneNumber : `whatsapp:${twilioPhoneNumber.replace(/[^\d+]/g, "")}`;
+
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+
+  const params: Record<string, string> = {
+    To: cleanTo,
+    From: cleanFrom,
+    Body: messageText,
+  };
+
+  if (mediaUrl) {
+    const isLocalHost = mediaUrl.includes("localhost") || mediaUrl.includes("127.0.0.1");
+    if (isLocalHost) {
+      console.warn(`[WARNING] Skipping media attachment in local development (Twilio cannot fetch from localhost): ${mediaUrl}`);
+    } else {
+      params.MediaUrl = mediaUrl;
+    }
+  }
+
+  const body = new URLSearchParams(params);
 
   try {
     const response = await fetch(url, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+        Authorization: `Basic ${getBasicAuth(accountSid, authToken)}`,
       },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        recipient_type: "individual",
-        to: cleanPhone,
-        type: "text",
-        text: { body: messageText },
-      }),
+      body: body.toString(),
     });
 
+    const data = await response.json();
+
     if (!response.ok) {
-      const errorJson = await response.json().catch(() => ({}));
-      const errorDetail = JSON.stringify(errorJson);
-      console.error(`WhatsApp Cloud API error response: Status ${response.status} - ${errorDetail}`);
-
-      // Handle WhatsApp Disconnection triggers:
-      // Typically subcode 190 (Expired Token) or 401/403 status codes.
-      if (response.status === 401 || response.status === 403 || errorJson.error?.code === 190) {
-        console.warn(`WhatsApp connection dropped for vendor user ${userId}. Halting send operations and alert triggered.`);
-        
-        // Mark conversation escalation or log a business alert for settings
-        await db.conversation.updateMany({
-          where: { userId, customerPhone: toPhone },
-          data: { isEscalated: true },
-        }).catch((err) => console.error("Could not auto-escalate conversation on connection drop:", err));
-      }
-
+      console.error(`Twilio API error: Status ${response.status} - ${data.message}`);
       return {
         success: false,
-        error: errorJson.error?.message || `Failed to send with status ${response.status}`,
+        error: data.message || `Failed to send with status ${response.status}`,
       };
     }
 
-    const data = await response.json();
     return {
       success: true,
-      messageId: data.messages?.[0]?.id,
+      messageId: data.sid,
     };
   } catch (error) {
-    console.error("WhatsApp Send Message Network Exception:", error);
+    console.error("Twilio Send Message Network Exception:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Network error",

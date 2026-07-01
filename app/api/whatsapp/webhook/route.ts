@@ -1,64 +1,84 @@
 import { db } from "@/lib/db";
 import { handleIncomingWhatsAppMessage } from "@/services/whatsapp/messageHandler";
+import { isValidTwilioRequest } from "@/lib/twilio-validate";
 import { NextResponse } from "next/server";
-
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const mode = searchParams.get("hub.mode");
-  const token = searchParams.get("hub.verify_token");
-  const challenge = searchParams.get("hub.challenge");
-
-  const verifyToken = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN;
-
-  if (mode === "subscribe" && token === verifyToken) {
-    console.log("WhatsApp Webhook verified successfully.");
-    return new Response(challenge, { status: 200, headers: { "Content-Type": "text/plain" } });
-  }
-
-  console.error("WhatsApp Webhook verification failed. Token mismatch.");
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-}
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const formData = await req.formData();
+    const params = Object.fromEntries(formData.entries());
 
-    // Verify WhatsApp webhook payload shape
-    if (body.object === "whatsapp_business_account") {
-      const entry = body.entry?.[0];
-      const change = entry?.changes?.[0];
-      const value = change?.value;
-      const metadata = value?.metadata;
-      const message = value?.messages?.[0];
+    const from = params.From as string | undefined;
+    const body = params.Body as string | undefined;
+    const to = params.To as string | undefined;
+    const mediaUrl = params.MediaUrl0 as string | undefined;
 
-      if (message && message.type === "text") {
-        const customerPhone = message.from; // Sender's phone number
-        const messageText = message.text?.body;
-        const recipientPhoneId = metadata?.phone_number_id; // Receipient phone number ID
-
-        // Multi-tenant mapping:
-        // Find the vendor user matching the WhatsApp phone ID.
-        // For MVP & onboarding simplicity, if no custom mapping table exists yet,
-        // we can lookup the user matching the env variable or the first registered user.
-        let targetUser = await db.user.findFirst();
-
-        if (targetUser && messageText) {
-          // Process message asynchronously
-          handleIncomingWhatsAppMessage(targetUser.id, customerPhone, messageText).catch((err) => {
-            console.error(`Error processing webhook message for phone ${customerPhone}:`, err);
-          });
-        } else {
-          console.warn(`Webhook received message but no registered vendor matches phone_number_id: ${recipientPhoneId}`);
-        }
+    // Validate Twilio signature in production
+    const signature = req.headers.get("x-twilio-signature") || req.headers.get("X-Twilio-Signature");
+    const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+    if (signature && twilioAuthToken && process.env.NODE_ENV === "production") {
+      const strParams: Record<string, string> = {};
+      Array.from(formData.entries()).forEach(([k, v]) => {
+        if (typeof v === "string") strParams[k] = v;
+      });
+      if (!isValidTwilioRequest(req.url, strParams, signature, twilioAuthToken)) {
+        console.warn("[WEBHOOK] Invalid Twilio signature — rejecting");
+        return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
       }
-
-      // Always return 200 OK to Meta immediately
-      return new Response("EVENT_RECEIVED", { status: 200 });
     }
 
-    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+    if (!from || (!body && !mediaUrl)) {
+      return NextResponse.json({ error: "Missing From, Body, or MediaUrl" }, { status: 400 });
+    }
+
+    const messageText = body || "";
+
+    // Extract dynamic request origin (ngrok friendly)
+    const reqUrl = new URL(req.url);
+    const proto = req.headers.get("x-forwarded-proto") || reqUrl.protocol.replace(":", "");
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || reqUrl.host;
+    const origin = `${proto}://${host}`;
+
+    // Strip "whatsapp:" prefix for DB/env matching
+    const rawTo = to?.replace(/^whatsapp:/, "");
+
+    let targetUserId: string | null = null;
+
+    if (rawTo) {
+      const config = await db.whatsAppConfig.findFirst({
+        where: { twilioPhoneNumber: rawTo, connected: true },
+        select: { userId: true },
+      });
+      targetUserId = config?.userId || null;
+    }
+
+    // Fallback: try env var Twilio number (single-tenant backward compat)
+    if (!targetUserId && rawTo === process.env.TWILIO_WHATSAPP_NUMBER) {
+      const userWithProducts = await db.product.findFirst({
+        select: { userId: true },
+      });
+      if (userWithProducts) {
+        targetUserId = userWithProducts.userId;
+      } else {
+        const firstUser = await db.user.findFirst({ select: { id: true } });
+        targetUserId = firstUser?.id || null;
+      }
+    }
+
+    if (targetUserId) {
+      handleIncomingWhatsAppMessage(targetUserId, from, messageText, mediaUrl, origin).catch((err) => {
+        console.error(`Error processing webhook message from ${from}:`, err);
+      });
+    } else {
+      console.warn(`Webhook received message but no vendor matches Twilio number: ${to}`);
+    }
+
+    return new Response("<Response></Response>", {
+      status: 200,
+      headers: { "Content-Type": "text/xml" },
+    });
   } catch (error) {
-    console.error("WhatsApp Webhook POST handler error:", error);
+    console.error("Twilio Webhook POST handler error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

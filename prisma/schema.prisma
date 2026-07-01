@@ -25,12 +25,30 @@ model User {
   resetTokenExpires DateTime? @map("reset_token_expires")
   createdAt    DateTime @default(now()) @map("created_at")
 
-  products      Product[]
-  faqs          FAQ[]
-  leads         Lead[]
-  conversations Conversation[]
+  businessProfile BusinessProfile?
+  products        Product[]
+  faqs            FAQ[]
+  leads           Lead[]
+  conversations   Conversation[]
+  whatsAppConfigs WhatsAppConfig[]
 
   @@map("users")
+}
+
+model BusinessProfile {
+  id              String   @id @default(cuid())
+  userId          String   @map("user_id")
+  description     String?
+  deliveryPolicy  String?  @map("delivery_policy")
+  paymentPolicy   String?  @map("payment_policy")
+  returnPolicy    String?  @map("return_policy")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@map("business_profiles")
 }
 
 model Product {
@@ -79,6 +97,23 @@ model Lead {
   @@map("leads")
 }
 
+model WhatsAppConfig {
+  id                 String   @id @default(cuid())
+  userId             String   @map("user_id")
+  accountSid         String   @map("account_sid")
+  authToken          String   @map("auth_token")
+  twilioPhoneNumber  String   @map("twilio_phone_number")
+  connected          Boolean  @default(true) @map("connected")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId])
+  @@index([twilioPhoneNumber])
+  @@map("whatsapp_configs")
+}
+
 model Conversation {
   id                  String   @id @default(cuid())
   userId              String   @map("user_id")
@@ -90,6 +125,7 @@ model Conversation {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, customerPhone])
   @@index([userId])
   @@map("conversations")
 }

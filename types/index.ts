@@ -27,7 +27,8 @@ export interface FAQ {
   createdAt: Date;
 }
 
-export type LeadStatus = "NEW" | "CONTACTED" | "QUALIFIED" | "CONVERTED" | "LOST";
+import { LeadStatus } from "@prisma/client";
+export type { LeadStatus };
 
 export interface Lead {
   id: string;
@@ -42,6 +43,7 @@ export interface Lead {
 export interface ChatMessage {
   role: "customer" | "ai" | "vendor";
   content: string;
+  mediaUrl?: string;
   timestamp: string;
 }
 

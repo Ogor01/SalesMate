@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -29,7 +29,7 @@ export function SidebarNav() {
   const pathname = usePathname();
 
   return (
-    <nav style={{ padding: "var(--space-6) var(--space-3) var(--space-3)", display: "flex", flexDirection: "column", gap: "4px" }}>
+    <nav style={{ padding: "var(--space-8) var(--space-3) var(--space-3)", display: "flex", flexDirection: "column", gap: "6px" }}>
       {navItems.map((item) => {
         const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
         return (
@@ -73,9 +73,23 @@ export function SidebarNav() {
 
 export function SidebarProfile({ businessName, vendorName, vendorEmail }: { businessName: string; vendorName: string; vendorEmail: string }) {
   const [profileOpen, setProfileOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!profileOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [profileOpen]);
 
   return (
-    <div style={{ borderTop: "var(--border-sidebar)" }}>
+    <div ref={containerRef} style={{ borderTop: "var(--border-sidebar)" }}>
       <div
         onClick={() => setProfileOpen(!profileOpen)}
         style={{

@@ -1,0 +1,53 @@
+
+> salesmate-ai@1.0.0 dev
+> next dev -p 3000
+
+  ▲ Next.js 14.2.35
+  - Local:        http://localhost:3000
+  - Environments: .env
+
+ ✓ Starting...
+ ✓ Ready in 9.5s
+ ○ Compiling /api/whatsapp/webhook ...
+ ✓ Compiled /api/whatsapp/webhook in 1987ms (69 modules)
+ POST /api/whatsapp/webhook 200 in 2677ms
+ ○ Compiling /[...slug] ...
+ ✓ Compiled /[...slug] in 4.5s (810 modules)
+ POST /api/whatsapp/webhook 307 in 8242ms
+ POST /login 307 in 171ms
+ POST /login 307 in 82ms
+ POST /login 307 in 81ms
+ POST /login 307 in 101ms
+ POST /login 307 in 108ms
+ POST /login 307 in 85ms
+ POST /login 307 in 124ms
+ POST /login 307 in 130ms
+ POST /login 307 in 92ms
+ POST /login 307 in 134ms
+ POST /login 307 in 72ms
+ POST /login 307 in 83ms
+ POST /login 307 in 150ms
+ POST /login 307 in 104ms
+ POST /api/whatsapp/webhook 307 in 125ms
+ POST /login 307 in 80ms
+ POST /login 307 in 157ms
+ POST /login 307 in 200ms
+ POST /login 307 in 147ms
+ POST /login 307 in 155ms
+ POST /login 307 in 131ms
+ POST /login 307 in 137ms
+ POST /login 307 in 201ms
+ POST /login 307 in 197ms
+ POST /login 307 in 110ms
+ POST /login 307 in 159ms
+ POST /login 307 in 103ms
+ POST /login 307 in 108ms
+ POST /login 307 in 118ms
+ POST /login 307 in 148ms
+ POST /login 307 in 76ms
+ POST /login 307 in 122ms
+ POST /login 307 in 100ms
+ POST /login 307 in 125ms
+ POST /login 307 in 125ms
+ POST /api/whatsapp/webhook 307 in 108ms
+[?25h
