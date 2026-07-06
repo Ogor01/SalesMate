@@ -1,10 +1,24 @@
 import { db } from "@/lib/db";
 import { handleIncomingWhatsAppMessage } from "@/services/whatsapp/messageHandler";
 import { isValidTwilioRequest } from "@/lib/twilio-validate";
+import { checkRateLimit, STRICT_RATE_LIMIT } from "@/lib/rate-limiter";
 import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
+    // Rate limit by IP for the webhook (unauthenticated endpoint)
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+    const rateResult = checkRateLimit(`webhook:${ip}`, STRICT_RATE_LIMIT);
+    if (!rateResult.allowed) {
+      return NextResponse.json(
+        { error: { message: "Too many requests", code: "RATE_LIMITED" } },
+        { status: 429 }
+      );
+    }
+
     const formData = await req.formData();
     const params = Object.fromEntries(formData.entries());
 
@@ -13,10 +27,11 @@ export async function POST(req: Request) {
     const to = params.To as string | undefined;
     const mediaUrl = params.MediaUrl0 as string | undefined;
 
-    // Validate Twilio signature in production
+    // Validate Twilio signature when present (works in all environments)
     const signature = req.headers.get("x-twilio-signature") || req.headers.get("X-Twilio-Signature");
     const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
-    if (signature && twilioAuthToken && process.env.NODE_ENV === "production") {
+
+    if (signature && twilioAuthToken) {
       const strParams: Record<string, string> = {};
       Array.from(formData.entries()).forEach(([k, v]) => {
         if (typeof v === "string") strParams[k] = v;
@@ -25,6 +40,9 @@ export async function POST(req: Request) {
         console.warn("[WEBHOOK] Invalid Twilio signature — rejecting");
         return NextResponse.json({ error: "Invalid signature" }, { status: 403 });
       }
+    } else if (process.env.NODE_ENV === "production" && !signature) {
+      console.warn("[WEBHOOK] Missing Twilio signature in production — rejecting");
+      return NextResponse.json({ error: "Missing signature" }, { status: 403 });
     }
 
     if (!from || (!body && !mediaUrl)) {

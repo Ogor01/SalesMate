@@ -45,7 +45,7 @@ export async function generateAndSendReply(
       aiConfidenceScore: 0.0,
     });
 
-    dispatchSystemEvent(userId, "escalation_triggered", {
+    void dispatchSystemEvent(userId, "escalation_triggered", {
       phone: customerPhone,
       reason: `AI generation error: ${completion.error}`,
     });
@@ -72,7 +72,7 @@ export async function generateAndSendReply(
       isEscalated: true,
     });
 
-    dispatchSystemEvent(userId, "escalation_triggered", {
+    void dispatchSystemEvent(userId, "escalation_triggered", {
       phone: customerPhone,
       reason: "Low confidence response score",
     });
@@ -113,7 +113,7 @@ export async function generateAndSendReply(
       isEscalated: true,
     });
 
-    dispatchSystemEvent(userId, "whatsapp_disconnected", {
+    void dispatchSystemEvent(userId, "whatsapp_disconnected", {
       phone: customerPhone,
       error: sendResult.error,
     });

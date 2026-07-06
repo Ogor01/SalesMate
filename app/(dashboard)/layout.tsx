@@ -37,8 +37,14 @@ async function DashboardLayoutContent({
     select: { fullName: true, businessName: true, email: true },
   });
 
+  const whatsappConfig = await db.whatsAppConfig.findUnique({
+    where: { userId },
+    select: { connected: true },
+  });
+
   const businessName = user?.businessName || "SalesMate Fashion Shop";
   const vendorName = user?.fullName || "Adeola";
+  const whatsappConnected = whatsappConfig?.connected ?? false;
 
   return (
     <div className="dashboard-layout-container">
@@ -101,6 +107,7 @@ async function DashboardLayoutContent({
           businessName={businessName}
           vendorName={vendorName}
           vendorEmail={user?.email || ""}
+          whatsappConnected={whatsappConnected}
         />
       </aside>
 

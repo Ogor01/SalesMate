@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { generateStructuredCompletion } from "../ai/provider";
+import { dispatchSystemEvent } from "../notifications/dispatcher";
 import { LeadStatus } from "@prisma/client";
 
 interface ExtractedIntent {
@@ -120,6 +121,12 @@ export async function extractAndSaveLeadIntent(
           productInterest: extracted.productInterest || null,
           leadStatus: extracted.leadStatus || "NEW",
         },
+      });
+
+      void dispatchSystemEvent(userId, "lead_created", {
+        customerName: extracted.customerName || null,
+        phoneNumber: customerPhone,
+        productInterest: extracted.productInterest || null,
       });
     }
   } catch (dbError) {

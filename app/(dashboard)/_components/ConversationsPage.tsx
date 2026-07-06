@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Search, Loader, AlertCircle, Send, User, RefreshCw,
   CheckCheck, MoreVertical, Bot, MessageSquare, Smartphone,
-  ArrowLeft, Phone, Clock
+  ArrowLeft, Phone, Clock, ShieldAlert, Sparkles, UserCheck
 } from "lucide-react";
 
 interface ChatMessage {
@@ -23,10 +23,19 @@ interface Conversation {
 }
 
 function fmtPhone(p: string) {
-  const c = p.replace(/^whatsapp:/, "").replace(/[^\d+]/g, "");
-  if (c.length === 12) return `+${c.slice(0,3)} ${c.slice(3,6)} ${c.slice(6,8)} ${c.slice(8)}`;
-  if (c.length === 11) return `+${c.slice(0,1)} ${c.slice(1,4)} ${c.slice(4,7)} ${c.slice(7)}`;
-  return c;
+  let clean = p.replace(/^whatsapp:/, "").trim();
+  if (!clean.startsWith("+") && /^\d+$/.test(clean)) {
+    clean = "+" + clean;
+  }
+  // Format Nigeria (+234) phone numbers cleanly
+  if (clean.startsWith("+234") && clean.length >= 13) {
+    return `+234 ${clean.slice(4,7)} ${clean.slice(7,10)} ${clean.slice(10)}`;
+  }
+  // Format US (+1) phone numbers cleanly
+  if (clean.startsWith("+1") && clean.length === 12) {
+    return `+1 (${clean.slice(2,5)}) ${clean.slice(5,8)}-${clean.slice(8)}`;
+  }
+  return clean;
 }
 
 function ago(ts: string) {
@@ -49,24 +58,12 @@ function dateLabel(ts: string) {
   if (d.toDateString() === n.toDateString()) return "Today";
   const y = new Date(n); y.setDate(y.getDate() - 1);
   if (d.toDateString() === y.toDateString()) return "Yesterday";
-  return d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-}
-
-function avatarLabel(p: string) {
-  return p.replace(/^whatsapp:/, "").replace(/[^\d]/g, "").slice(-4);
+  return d.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" });
 }
 
 function avatarColor(p: string) {
-  const colors = ["#25D366", "#EF4444", "#F59E0B", "#3B82F6", "#8B5CF6", "#EC4899", "#14B8A6", "#F97316"];
+  const colors = ["#4F46E5", "#3B82F6", "#06B6D4", "#0D9488", "#10B981", "#F59E0B", "#EF4444", "#EC4899"];
   return colors[p.split("").reduce((a, c) => a + c.charCodeAt(0), 0) % colors.length];
-}
-
-function BubbleTail({ left }: { left: boolean }) {
-  return (
-    <svg width="8" height="13" viewBox="0 0 8 13" style={{ position: "absolute", top: 0, [left ? "left" : "right"]: -7 }}>
-      <path d={left ? "M8,0 C5,0 2,2 0,6 L8,6 Z" : "M0,0 C3,0 6,2 8,6 L0,6 Z"} fill={left ? "var(--color-card)" : "var(--color-primary-surface)"} />
-    </svg>
-  );
 }
 
 export default function ConversationsPage() {
@@ -89,32 +86,74 @@ export default function ConversationsPage() {
         const list: Conversation[] = j.data || [];
         setConversations(list);
         if (list.length) {
-          if (auto || !selected) { setSelected(list[0]); setMobileList(false); }
-          else { const c = list.find(x => x.id === selected.id); if (c) setSelected(c); }
+          if (auto || !selected) {
+            setSelected(list[0]);
+            setMobileList(false);
+          } else {
+            const c = list.find(x => x.id === selected.id);
+            if (c) setSelected(c);
+          }
         }
       }
-    } catch {} finally { setLoading(false); }
+    } catch {} finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { fetchAll(true); const i = setInterval(() => fetchAll(false), 10000); return () => clearInterval(i); }, []);
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [selected?.conversationHistory]);
+  useEffect(() => {
+    fetchAll(true);
+    const i = setInterval(() => fetchAll(false), 10000);
+    return () => clearInterval(i);
+  }, []);
+
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [selected?.conversationHistory]);
 
   const toggleEsc = async (chat: Conversation) => {
     const next = !chat.isEscalated;
     setConversations(prev => prev.map(c => c.id === chat.id ? { ...c, isEscalated: next } : c));
     if (selected?.id === chat.id) setSelected({ ...selected, isEscalated: next });
-    try { await fetch("/api/conversations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ customerPhone: chat.customerPhone, messageText: `[System] AI ${next ? "PAUSED" : "RESUMED"}`, toggleEscalation: next }) }); } catch {}
+    try {
+      await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerPhone: chat.customerPhone,
+          messageText: `[System] AI ${next ? "PAUSED" : "RESUMED"}`,
+          toggleEscalation: next
+        })
+      });
+    } catch {}
   };
 
   const sendMsg = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim() || !selected) return;
-    setSending(true); setError("");
+    setSending(true);
+    setError("");
     try {
-      const r = await fetch("/api/conversations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ customerPhone: selected.customerPhone, messageText: text, toggleEscalation: false }) });
+      const r = await fetch("/api/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerPhone: selected.customerPhone,
+          messageText: text,
+          toggleEscalation: false
+        })
+      });
       const j = await r.json();
-      if (r.ok) { setText(""); await fetchAll(false); } else setError(j.error?.message || "Failed to send");
-    } catch { setError("Network error"); } finally { setSending(false); }
+      if (r.ok) {
+        setText("");
+        await fetchAll(false);
+      } else {
+        setError(j.error?.message || "Failed to send");
+      }
+    } catch {
+      setError("Network error");
+    } finally {
+      setSending(false);
+    }
   };
 
   const filtered = conversations.filter(c => {
@@ -125,6 +164,13 @@ export default function ConversationsPage() {
 
   const lastMsg = (c: Conversation) => c.conversationHistory?.[c.conversationHistory.length - 1];
 
+  const renderLastMsgPreview = (chat: Conversation) => {
+    const last = lastMsg(chat);
+    if (!last) return "No messages yet";
+    const prefix = last.role === "vendor" ? "You: " : last.role === "ai" ? "AI: " : "";
+    return `${prefix}${last.content}`;
+  };
+
   const renderBubble = (msg: ChatMessage, i: number, arr: ChatMessage[]) => {
     const isCus = msg.role === "customer";
     const isAi = msg.role === "ai";
@@ -134,42 +180,33 @@ export default function ConversationsPage() {
     const gEnd = !next || next.role !== msg.role;
 
     return (
-      <div key={i} style={{
-        display: "flex", flexDirection: "column",
-        alignItems: isCus ? "flex-start" : "flex-end",
-        marginBottom: gEnd ? 1 : 0,
-        marginTop: gStart ? 10 : 0,
-        paddingLeft: isCus ? 0 : 65,
-        paddingRight: isCus ? 65 : 0,
-        animation: "fadeIn 0.25s ease",
-      }}>
-        {gStart && isAi && (
-          <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3, marginRight: "auto" }}>
-            <Bot size={10} color="var(--color-muted-foreground)" />
-            <span style={{ fontSize: 10, color: "var(--color-muted-foreground)", fontWeight: 500 }}>AI Agent</span>
-            <span style={{ fontSize: 9, background: "var(--color-primary-surface)", color: "var(--color-primary-text)", padding: "0 5px", borderRadius: 3, fontWeight: 600 }}>
-              {selected ? Math.round(selected.aiConfidenceScore * 100) : 0}%
-            </span>
+      <div key={i} className={`bubble-row ${msg.role}`}>
+        {gStart && !isCus && (
+          <div className="bubble-meta-header">
+            {isAi ? (
+              <>
+                <Bot size={11} style={{ color: "var(--color-primary-text)" }} />
+                <span style={{ color: "var(--color-primary-text)", fontWeight: 600 }}>AI Agent</span>
+                <span className="confidence-tag">
+                  {selected ? Math.round(selected.aiConfidenceScore * 100) : 0}% Conf
+                </span>
+              </>
+            ) : (
+              <>
+                <User size={11} style={{ color: "var(--color-muted-foreground)" }} />
+                <span style={{ color: "var(--color-muted-foreground)", fontWeight: 600 }}>You (Vendor)</span>
+              </>
+            )}
           </div>
         )}
         <div style={{ position: "relative", maxWidth: "85%" }}>
-          {gStart && <BubbleTail left={isCus} />}
-          <div style={{
-            background: isCus ? "var(--color-card)" : "var(--color-primary-surface)",
-            color: "var(--color-foreground)",
-            padding: "7px 12px",
-            borderRadius: isCus ? "0 8px 8px 8px" : "8px 0 8px 8px",
-            fontSize: 13.3, lineHeight: 1.45,
-            whiteSpace: "pre-wrap", wordBreak: "break-word",
-            boxShadow: "0 1px 1px rgba(0,0,0,0.04)",
-            border: isCus ? "1px solid var(--color-border)" : "1px solid var(--color-primary-border)",
-          }}>
-            {msg.content.split("\n").map((l, li) => <p key={li} style={{ margin: 0 }}>{l}</p>)}
+          <div className="bubble-card">
+            {msg.content}
           </div>
           {gEnd && (
-            <div style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 2, justifyContent: "flex-end", paddingRight: 4 }}>
-              <span style={{ fontSize: 9.5, color: "var(--color-muted-foreground)" }}>{msgTime(msg.timestamp)}</span>
-              {!isCus && <CheckCheck size={11} color="var(--color-primary)" />}
+            <div className="bubble-meta-footer">
+              <span>{msgTime(msg.timestamp)}</span>
+              {!isCus && <CheckCheck size={12} style={{ color: "var(--color-primary)" }} />}
             </div>
           )}
         </div>
@@ -177,151 +214,249 @@ export default function ConversationsPage() {
     );
   };
 
+  const renderMessages = () => {
+    if (!selected) return null;
+    const list: React.ReactNode[] = [];
+    let lastDate = "";
+
+    selected.conversationHistory.forEach((msg, i, arr) => {
+      const currentDate = new Date(msg.timestamp).toDateString();
+      if (currentDate !== lastDate) {
+        list.push(
+          <div key={`date-${msg.timestamp}-${i}`} className="date-divider">
+            <span className="date-pill">{dateLabel(msg.timestamp)}</span>
+          </div>
+        );
+        lastDate = currentDate;
+      }
+      list.push(renderBubble(msg, i, arr));
+    });
+
+    return list;
+  };
+
   const chatView = selected ? (
     <>
-      <div style={{ background: "var(--color-muted)", padding: "10px 16px", borderBottom: "var(--color-border)", display: "flex", alignItems: "center", justifyContent: "space-between", minHeight: 56 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => setMobileList(true)} className="chat-back" style={{ display: "none", background: "none", border: "none", cursor: "pointer", padding: 4 }}>
-            <ArrowLeft size={20} color="var(--color-foreground)" />
+      <div className="chat-header">
+        <div className="header-user-info">
+          <button onClick={() => setMobileList(true)} className="back-btn">
+            <ArrowLeft size={18} />
           </button>
-          <div style={{ width: 38, height: 38, borderRadius: "50%", background: avatarColor(selected.customerPhone), display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontWeight: 700, fontSize: 12, flexShrink: 0 }}>
-            {avatarLabel(selected.customerPhone)}
+          <div className="avatar-wrapper">
+            <div className="avatar-circle" style={{ background: avatarColor(selected.customerPhone) }}>
+              <User size={18} color="#FFFFFF" strokeWidth={2.5} />
+            </div>
           </div>
           <div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: "var(--color-foreground)" }}>{fmtPhone(selected.customerPhone)}</div>
-            <div style={{ fontSize: 10.5, display: "flex", alignItems: "center", gap: 3 }}>
+            <div className="header-name">{fmtPhone(selected.customerPhone)}</div>
+            <div className="header-status">
               {selected.isEscalated ? (
-                <><span style={{ color: "var(--color-destructive)" }}><AlertCircle size={10} /> Human takeover</span></>
+                <span style={{ color: "var(--color-destructive)", display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 500 }}>
+                  <ShieldAlert size={12} /> Human takeover active
+                </span>
               ) : (
-                <><Bot size={10} color="var(--color-primary-text)" /><span style={{ color: "var(--color-primary-text)" }}>AI Assistant &middot; {Math.round(selected.aiConfidenceScore * 100)}%</span></>
+                <span style={{ color: "var(--color-primary-text)", display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 500 }}>
+                  <Bot size={12} /> AI Auto-responding
+                </span>
               )}
             </div>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <button onClick={() => toggleEsc(selected)} style={{
-            background: selected.isEscalated ? "var(--color-primary)" : "var(--color-destructive-surface)",
-            color: selected.isEscalated ? "#FFFFFF" : "var(--color-destructive)",
-            border: "none", padding: "5px 14px", borderRadius: 18, fontSize: 10.5,
-            fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 5,
-          }}>
-            {selected.isEscalated ? <><Bot size={12} /> Resume AI</> : <><User size={12} /> Take Over</>}
+        <div className="header-actions">
+          <button
+            onClick={() => toggleEsc(selected)}
+            className={`takeover-btn ${selected.isEscalated ? "human-mode" : "ai-mode"}`}
+          >
+            {selected.isEscalated ? (
+              <>
+                <Bot size={13} />
+                <span>Resume AI Auto</span>
+              </>
+            ) : (
+              <>
+                <UserCheck size={13} />
+                <span>Take Over Chat</span>
+              </>
+            )}
           </button>
-          <button style={{ background: "none", border: "none", cursor: "pointer", color: "var(--color-muted-foreground)", padding: 6, borderRadius: "50%", display: "flex" }}>
-            <MoreVertical size={15} />
+          <button className="btn-icon">
+            <MoreVertical size={16} />
           </button>
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 0", background: "var(--color-background)", position: "relative" }}>
+      <div className="messages-scroller">
         {selected.conversationHistory?.length ? (
           <>
-            <div style={{ display: "flex", justifyContent: "center", margin: "0 auto 16px", position: "sticky", top: 0, zIndex: 2 }}>
-              <span style={{ background: "rgba(225,245,254,0.92)", backdropFilter: "blur(8px)", color: "var(--color-muted-foreground)", fontSize: 11.5, fontWeight: 500, padding: "5px 16px", borderRadius: 7, boxShadow: "0 1px 2px rgba(0,0,0,0.06)" }}>
-                {dateLabel(selected.conversationHistory[0].timestamp)}
-              </span>
-            </div>
-            {selected.conversationHistory.map((m, i) => renderBubble(m, i, selected.conversationHistory))}
+            {renderMessages()}
           </>
         ) : (
-          <div style={{ textAlign: "center", color: "var(--color-muted-foreground)", padding: 40, fontSize: 13 }}>
-            <MessageSquare size={32} strokeWidth={1} style={{ opacity: 0.3, marginBottom: 8 }} />
-            <p>No messages yet</p>
+          <div className="empty-state" style={{ background: "transparent" }}>
+            <div className="empty-graphic">
+              <MessageSquare size={32} color="var(--color-muted-foreground)" strokeWidth={1} />
+            </div>
+            <h3 className="empty-title">No messages</h3>
+            <p className="empty-subtitle">Start chatting with this user via WhatsApp.</p>
           </div>
         )}
         <div ref={endRef} />
       </div>
 
-      <form onSubmit={sendMsg} style={{ background: "var(--color-muted)", padding: "8px 14px", borderTop: "1px solid var(--color-border)", display: "flex", gap: 8, alignItems: "center" }}>
-        <div style={{ flex: 1 }}>
-          <input type="text" placeholder={selected.isEscalated ? "Reply as vendor..." : "Type a message..."} value={text} onChange={e => setText(e.target.value)} disabled={sending}
-            style={{ width: "100%", borderRadius: 24, padding: "9px 16px", fontSize: 13.5, background: "var(--color-card)", border: "1px solid var(--color-border)", outline: "none", fontFamily: "inherit", color: "var(--color-foreground)" }}
+      <form onSubmit={sendMsg} className="input-panel">
+        <div className="input-container">
+          <textarea
+            placeholder={selected.isEscalated ? "Reply directly to customer..." : "Type a message to manually take over..."}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                if (text.trim() && !sending) {
+                  sendMsg(e);
+                }
+              }
+            }}
+            disabled={sending}
+            className="chat-input"
+            rows={1}
           />
+          <button
+            type="submit"
+            disabled={sending || !text.trim()}
+            className="chat-send-btn"
+          >
+            {sending ? <Loader size={16} className="animate-spin" /> : <Send size={16} />}
+          </button>
         </div>
-        <button type="submit" disabled={sending || !text.trim()} style={{
-          width: 42, height: 42, borderRadius: "50%", padding: 0, display: "flex", alignItems: "center", justifyContent: "center",
-          background: text.trim() ? "var(--color-primary)" : "var(--color-muted-foreground)", opacity: text.trim() ? 1 : 0.3,
-          color: "#FFFFFF", border: "none", cursor: text.trim() ? "pointer" : "default", flexShrink: 0,
-        }}>
-          {sending ? <Loader size={15} className="animate-spin" /> : <Send size={15} />}
-        </button>
+        <div className="input-disclaimer">
+          <Smartphone size={10} />
+          <span>
+            {selected.isEscalated
+              ? "AI is currently paused. Messages are sent directly to the customer's WhatsApp."
+              : "AI is active. Sending a message will automatically switch this conversation to Human Takeover."}
+          </span>
+        </div>
       </form>
     </>
   ) : null;
 
   const sidebar = (
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--color-card)" }}>
-      <div style={{ background: "var(--color-sidebar-bg)", padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <h2 style={{ fontSize: 15, fontWeight: 700, color: "#FFFFFF", display: "flex", alignItems: "center", gap: 8 }}>
-          <MessageSquare size={16} /> Conversations
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "#FFFFFF" }}>
+      <div className="sidebar-header">
+        <h2 className="sidebar-title">
+          <MessageSquare size={18} color="var(--color-primary-text)" />
+          <span>Inbox</span>
         </h2>
-        <button onClick={() => { setLoading(true); fetchAll(false); }} style={{ background: "rgba(255,255,255,0.15)", border: "none", color: "#FFFFFF", cursor: "pointer", padding: 5, borderRadius: "50%", display: "flex" }}>
-          <RefreshCw size={13} />
+        <button
+          onClick={() => {
+            setLoading(true);
+            fetchAll(false);
+          }}
+          className="btn-icon"
+          title="Refresh Chats"
+        >
+          <RefreshCw size={14} />
         </button>
       </div>
 
-      <div style={{ padding: "8px 12px", background: "var(--color-sidebar-bg)" }}>
-        <div style={{ position: "relative" }}>
-          <Search size={13} color="rgba(255,255,255,0.5)" style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
-          <input type="text" placeholder="Search or start new chat" value={search} onChange={e => setSearch(e.target.value)}
-            style={{ width: "100%", paddingLeft: 32, fontSize: 12, height: 34, background: "rgba(255,255,255,0.2)", color: "#FFFFFF", border: "none", borderRadius: 8, outline: "none", fontFamily: "inherit" }}
+      <div className="search-container">
+        <div className="search-input-wrapper">
+          <Search size={14} className="search-icon" />
+          <input
+            type="text"
+            placeholder="Search phone number..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            className="search-input"
           />
         </div>
       </div>
 
-      <div style={{ display: "flex", padding: "10px 12px", gap: 6, borderBottom: "1px solid var(--color-border)" }}>
-        <button onClick={() => setFilter("all")} style={{
-          flex: 1, padding: "5px 0", fontSize: 11.5, fontWeight: filter === "all" ? 600 : 400,
-          background: filter === "all" ? "var(--color-primary)" : "transparent",
-          color: filter === "all" ? "#FFFFFF" : "var(--color-muted-foreground)",
-          border: "none", borderRadius: 16, cursor: "pointer",
-        }}>
-          All ({filtered.length})
+      <div className="tabs-container">
+        <button
+          onClick={() => setFilter("all")}
+          className={`tab-btn ${filter === "all" ? "active-all" : ""}`}
+        >
+          <span>All Chats</span>
+          <span style={{ 
+            fontSize: "10px", 
+            background: filter === "all" ? "rgba(37, 211, 102, 0.15)" : "rgba(0,0,0,0.06)", 
+            padding: "2px 6px", 
+            borderRadius: "10px",
+            color: filter === "all" ? "var(--color-primary-text)" : "var(--color-muted-foreground)",
+            fontWeight: 700
+          }}>
+            {filtered.length}
+          </span>
         </button>
-        <button onClick={() => setFilter("escalated")} style={{
-          flex: 1, padding: "5px 0", fontSize: 11.5, fontWeight: filter === "escalated" ? 600 : 400,
-          background: filter === "escalated" ? "var(--color-destructive)" : "transparent",
-          color: filter === "escalated" ? "#FFFFFF" : "var(--color-muted-foreground)",
-          border: "none", borderRadius: 16, cursor: "pointer",
-        }}>
-          Escalated ({conversations.filter(c => c.isEscalated).length})
+        <button
+          onClick={() => setFilter("escalated")}
+          className={`tab-btn ${filter === "escalated" ? "active-escalated" : ""}`}
+        >
+          <span>Escalated</span>
+          <span style={{ 
+            fontSize: "10px", 
+            background: filter === "escalated" ? "rgba(239, 68, 68, 0.15)" : "rgba(0,0,0,0.06)", 
+            padding: "2px 6px", 
+            borderRadius: "10px",
+            color: filter === "escalated" ? "var(--color-destructive)" : "var(--color-muted-foreground)",
+            fontWeight: 700
+          }}>
+            {conversations.filter(c => c.isEscalated).length}
+          </span>
         </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div className="chat-list">
         {loading && !conversations.length ? (
-          <div style={{ display: "flex", justifyContent: "center", padding: 40 }}><Loader size={16} className="animate-spin" color="var(--color-primary)" /></div>
+          <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
+            <Loader size={18} className="animate-spin" color="var(--color-primary)" />
+          </div>
         ) : !filtered.length ? (
-          <div style={{ textAlign: "center", color: "var(--color-muted-foreground)", padding: 40, fontSize: 12.5 }}>
-            <MessageSquare size={36} strokeWidth={1} style={{ opacity: 0.25, marginBottom: 8 }} />
-            <p>{search ? "No results" : "No conversations yet"}</p>
+          <div className="empty-state" style={{ padding: "60px 20px" }}>
+            <div className="empty-graphic" style={{ width: 60, height: 60 }}>
+              <MessageSquare size={24} color="var(--color-muted-foreground)" strokeWidth={1} />
+            </div>
+            <h3 className="empty-title" style={{ fontSize: "14px" }}>No conversations</h3>
+            <p className="empty-subtitle" style={{ fontSize: "12px" }}>
+              {search ? "No matches found" : "No active customer inquiries yet."}
+            </p>
           </div>
         ) : (
           filtered.map(chat => {
-            const last = lastMsg(chat);
             const sel = selected?.id === chat.id;
             return (
-              <div key={chat.id} onClick={() => { setSelected(chat); setMobileList(false); }}
-                style={{ display: "flex", gap: 12, padding: "11px 14px", cursor: "pointer", borderBottom: "1px solid var(--color-border)", background: sel ? "var(--color-primary-surface)" : "transparent" }}>
-                <div style={{ position: "relative", flexShrink: 0 }}>
-                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: avatarColor(chat.customerPhone), display: "flex", alignItems: "center", justifyContent: "center", color: "#FFFFFF", fontWeight: 700, fontSize: 12 }}>
-                    {avatarLabel(chat.customerPhone)}
+              <div
+                key={chat.id}
+                onClick={() => {
+                  setSelected(chat);
+                  setMobileList(false);
+                }}
+                className={`chat-item ${sel ? "selected" : ""} ${chat.isEscalated ? "escalated" : ""}`}
+              >
+                <div className="avatar-wrapper">
+                  <div className="avatar-circle" style={{ background: avatarColor(chat.customerPhone) }}>
+                    <User size={18} color="#FFFFFF" strokeWidth={2.5} />
                   </div>
-                  <div style={{ position: "absolute", bottom: 0, right: 0, width: 14, height: 14, borderRadius: "50%", background: chat.isEscalated ? "var(--color-destructive)" : "var(--color-primary)", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid #FFFFFF" }}>
-                    {chat.isEscalated ? <AlertCircle size={7} color="#FFFFFF" /> : <Bot size={7} color="#FFFFFF" />}
+                  <div className={`avatar-status-badge ${chat.isEscalated ? "status-escalated" : "status-ai"}`}>
+                    {chat.isEscalated ? <AlertCircle size={9} color="#FFFFFF" /> : <Bot size={9} color="#FFFFFF" />}
                   </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 1 }}>
-                    <span style={{ fontWeight: 600, fontSize: 13.5, color: "var(--color-foreground)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{fmtPhone(chat.customerPhone)}</span>
-                    <span style={{ fontSize: 10, color: "var(--color-muted-foreground)", flexShrink: 0, marginLeft: 6 }}>{last ? ago(last.timestamp) : ""}</span>
+                <div className="item-content">
+                  <div className="item-header">
+                    <span className="item-phone">{fmtPhone(chat.customerPhone)}</span>
+                    <span className="item-time">{lastMsg(chat) ? ago(lastMsg(chat)!.timestamp) : ""}</span>
                   </div>
-                  <span style={{ fontSize: 12, color: "var(--color-muted-foreground)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", display: "block" }}>{last ? last.content : "No messages yet"}</span>
-                  <div style={{ display: "flex", gap: 4, marginTop: 3, alignItems: "center" }}>
-                    <span style={{ fontSize: 9.5, fontWeight: 600, padding: "1px 6px", borderRadius: 8, background: chat.isEscalated ? "var(--color-destructive-surface)" : "var(--color-primary-surface)", color: chat.isEscalated ? "var(--color-destructive)" : "var(--color-primary-text)" }}>
+                  <span className="item-preview">{renderLastMsgPreview(chat)}</span>
+                  <div className="item-meta">
+                    <span className={`meta-badge ${chat.isEscalated ? "badge-manual" : "badge-ai"}`}>
                       {chat.isEscalated ? "Manual" : "AI Auto"}
                     </span>
-                    {!chat.isEscalated && <span style={{ fontSize: 9.5, color: "var(--color-muted-foreground)" }}>{Math.round(chat.aiConfidenceScore * 100)}%</span>}
+                    {!chat.isEscalated && (
+                      <span className="meta-score">
+                        {Math.round(chat.aiConfidenceScore * 100)}% Match
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -330,47 +465,726 @@ export default function ConversationsPage() {
         )}
       </div>
 
-      <div style={{ padding: "6px 14px", borderTop: "1px solid var(--color-border)", background: "var(--color-muted)", fontSize: 9.5, color: "var(--color-muted-foreground)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span>{conversations.length} conversations</span>
-        <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Smartphone size={9} /> WhatsApp</span>
+      <div className="sidebar-footer">
+        <span>{conversations.length} total customer threads</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 3 }}><Smartphone size={10} /> Live</span>
       </div>
     </div>
   );
 
   return (
-    <div style={{ display: "flex", flex: 1, height: "calc(100vh - 64px)", overflow: "hidden", position: "relative" }}>
+    <div className="chat-container">
       {error && (
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 50, background: "var(--color-destructive-surface)", borderBottom: "1px solid rgba(239,68,68,0.2)", padding: "7px 14px", display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, color: "var(--color-destructive)" }}>
-          <AlertCircle size={13} />
+        <div className="error-banner">
+          <AlertCircle size={15} />
           <span>{error}</span>
-          <button onClick={() => setError("")} style={{ marginLeft: "auto", background: "none", border: "none", color: "var(--color-destructive)", cursor: "pointer", fontSize: 15 }}>&times;</button>
+          <button onClick={() => setError("")} className="error-close-btn">&times;</button>
         </div>
       )}
 
-      <div className={`c-sidebar ${mobileList ? "show" : ""}`} style={{ width: 350, borderRight: "1px solid var(--color-border)", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+      <div className={`chat-sidebar ${mobileList ? "show" : ""}`}>
         {sidebar}
       </div>
 
-      <div className={`c-main ${!mobileList ? "show" : ""}`} style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div className={`chat-main ${!mobileList ? "show" : ""}`}>
         {chatView ? chatView : (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: "var(--color-background)", gap: 8, color: "var(--color-muted-foreground)" }}>
-            <div style={{ width: 72, height: 72, borderRadius: "50%", background: "var(--color-primary-surface)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <MessageSquare size={32} color="var(--color-primary)" strokeWidth={1.5} />
+          <div className="empty-state">
+            <div className="empty-graphic">
+              <MessageSquare size={36} color="var(--color-primary)" strokeWidth={1.5} />
             </div>
-            <h3 style={{ fontSize: 14, fontWeight: 600, color: "var(--color-foreground)" }}>Select a conversation</h3>
-            <p style={{ fontSize: 12, textAlign: "center", maxWidth: 220, lineHeight: 1.5, color: "var(--color-muted-foreground)" }}>Choose a chat from the sidebar to view messages.</p>
+            <h3 className="empty-title">Select a Conversation</h3>
+            <p className="empty-subtitle">
+              Choose a customer thread from the sidebar list to view the message history, monitor AI confidence, and manually reply when needed.
+            </p>
           </div>
         )}
       </div>
 
       <style>{`
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        /* Core UI Layout */
+        .chat-container {
+          display: flex;
+          flex: 1;
+          height: calc(100vh - 64px);
+          overflow: hidden;
+          position: relative;
+          background-color: var(--color-background);
+          font-family: var(--font-body), sans-serif;
+        }
+
+        .chat-sidebar {
+          width: 380px;
+          border-right: 1px solid var(--color-border);
+          display: flex;
+          flex-direction: column;
+          flex-shrink: 0;
+          background-color: #FFFFFF;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 10;
+        }
+
+        .sidebar-header {
+          padding: var(--space-4) var(--space-5);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          border-bottom: 1px solid var(--color-border);
+        }
+
+        .sidebar-title {
+          font-size: var(--size-h3);
+          font-weight: var(--weight-bold);
+          color: var(--color-foreground);
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+
+        .btn-icon {
+          background: transparent;
+          border: none;
+          color: var(--color-muted-foreground);
+          cursor: pointer;
+          padding: var(--space-2);
+          border-radius: var(--radius-full);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+        }
+
+        .btn-icon:hover {
+          background-color: var(--color-muted);
+          color: var(--color-foreground);
+        }
+
+        .search-container {
+          padding: var(--space-3) var(--space-4);
+          position: relative;
+          border-bottom: 1px solid var(--color-border);
+        }
+
+        .search-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .search-icon {
+          position: absolute;
+          left: 12px;
+          color: var(--color-muted-foreground);
+          pointer-events: none;
+        }
+
+        .search-input {
+          width: 100%;
+          padding: 10px 12px 10px 38px;
+          font-size: var(--size-body-sm);
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-lg);
+          background-color: var(--color-background);
+          outline: none;
+          transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+          border-color: var(--color-primary);
+          background-color: #FFFFFF;
+          box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+        }
+
+        .tabs-container {
+          display: flex;
+          padding: 6px var(--space-4);
+          background-color: var(--color-background);
+          gap: 4px;
+        }
+
+        .tab-btn {
+          flex: 1;
+          padding: 8px 12px;
+          font-size: var(--size-caption);
+          font-weight: var(--weight-semibold);
+          background: transparent;
+          color: var(--color-muted-foreground);
+          border: none;
+          border-radius: var(--radius-md);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        }
+
+        .tab-btn:hover {
+          color: var(--color-foreground);
+          background-color: rgba(0, 0, 0, 0.03);
+        }
+
+        .tab-btn.active-all {
+          background-color: var(--color-primary-surface);
+          color: var(--color-primary-text);
+        }
+
+        .tab-btn.active-escalated {
+          background-color: var(--color-destructive-surface);
+          color: var(--color-destructive);
+        }
+
+        .chat-list {
+          flex: 1;
+          overflow-y: auto;
+        }
+
+        .chat-item {
+          display: flex;
+          gap: var(--space-3);
+          padding: var(--space-4) var(--space-5);
+          cursor: pointer;
+          border-bottom: 1px solid var(--color-border);
+          transition: all 0.2s ease;
+          position: relative;
+        }
+
+        .chat-item:hover {
+          background-color: #F8FAFC;
+        }
+
+        .chat-item.selected {
+          background-color: #F1F5F9;
+        }
+
+        .chat-item::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 4px;
+          background-color: var(--color-primary);
+          opacity: 0;
+          transition: opacity 0.2s ease;
+        }
+
+        .chat-item.selected::after {
+          opacity: 1;
+        }
+
+        .chat-item.selected.escalated::after {
+          background-color: var(--color-destructive);
+        }
+
+        .avatar-wrapper {
+          position: relative;
+          flex-shrink: 0;
+        }
+
+        .avatar-circle {
+          width: 46px;
+          height: 46px;
+          border-radius: var(--radius-full);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #FFFFFF;
+          font-weight: var(--weight-bold);
+          font-size: 13px;
+          box-shadow: var(--shadow-sm);
+        }
+
+        .avatar-status-badge {
+          position: absolute;
+          bottom: -2px;
+          right: -2px;
+          width: 18px;
+          height: 18px;
+          border-radius: var(--radius-full);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: 2px solid #FFFFFF;
+          box-shadow: var(--shadow-sm);
+        }
+
+        .status-ai {
+          background-color: var(--color-primary);
+        }
+
+        .status-escalated {
+          background-color: var(--color-destructive);
+        }
+
+        .item-content {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .item-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          margin-bottom: 2px;
+        }
+
+        .item-phone {
+          font-weight: var(--weight-semibold);
+          font-size: var(--size-body-sm);
+          color: var(--color-foreground);
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .item-time {
+          font-size: 11px;
+          color: var(--color-muted-foreground);
+          flex-shrink: 0;
+          margin-left: 6px;
+        }
+
+        .item-preview {
+          font-size: 13px;
+          color: var(--color-muted-foreground);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: block;
+        }
+
+        .item-meta {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 6px;
+        }
+
+        .meta-badge {
+          font-size: var(--size-micro);
+          font-weight: var(--weight-bold);
+          padding: 2px 8px;
+          border-radius: var(--radius-full);
+          text-transform: uppercase;
+        }
+
+        .meta-badge.badge-ai {
+          background-color: var(--color-primary-surface);
+          color: var(--color-primary-text);
+          border: 1px solid var(--color-primary-border);
+        }
+
+        .meta-badge.badge-manual {
+          background-color: var(--color-destructive-surface);
+          color: var(--color-destructive);
+          border: 1px solid var(--border-error);
+        }
+
+        .meta-score {
+          font-size: var(--size-micro);
+          color: var(--color-muted-foreground);
+        }
+
+        .sidebar-footer {
+          padding: var(--space-2) var(--space-4);
+          border-top: 1px solid var(--color-border);
+          background-color: var(--color-background);
+          font-size: var(--size-micro);
+          color: var(--color-muted-foreground);
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        /* Active Chat main area */
+        .chat-main {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          min-width: 0;
+          background-color: #FFFFFF;
+        }
+
+        .chat-header {
+          padding: var(--space-3) var(--space-5);
+          border-bottom: 1px solid var(--color-border);
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          background-color: #FFFFFF;
+          z-index: 5;
+        }
+
+        .header-user-info {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+        }
+
+        .back-btn {
+          display: none;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: var(--space-2);
+          border-radius: var(--radius-full);
+          color: var(--color-foreground);
+          transition: background-color 0.2s;
+        }
+
+        .back-btn:hover {
+          background-color: var(--color-muted);
+        }
+
+        .header-name {
+          font-weight: var(--weight-semibold);
+          font-size: var(--size-body-lg);
+          color: var(--color-foreground);
+        }
+
+        .header-status {
+          font-size: var(--size-caption);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 2px;
+        }
+
+        .header-actions {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+        }
+
+        .takeover-btn {
+          border: none;
+          padding: var(--space-2) var(--space-4);
+          border-radius: var(--radius-full);
+          font-size: var(--size-caption);
+          font-weight: var(--weight-bold);
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: var(--shadow-sm);
+        }
+
+        .takeover-btn.ai-mode {
+          background-color: var(--color-destructive);
+          color: #FFFFFF;
+        }
+
+        .takeover-btn.ai-mode:hover {
+          background-color: #DC2626;
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+          transform: translateY(-1px);
+        }
+
+        .takeover-btn.human-mode {
+          background-color: var(--color-primary);
+          color: #FFFFFF;
+        }
+
+        .takeover-btn.human-mode:hover {
+          background-color: var(--color-primary-dark);
+          box-shadow: 0 4px 12px rgba(37, 211, 102, 0.25);
+          transform: translateY(-1px);
+        }
+
+        /* Message flow */
+        .messages-scroller {
+          flex: 1;
+          overflow-y: auto;
+          padding: var(--space-5);
+          background-color: var(--color-background);
+          background-image: radial-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 0);
+          background-size: 16px 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+        }
+
+        .date-divider {
+          display: flex;
+          justify-content: center;
+          margin: var(--space-4) 0;
+          position: sticky;
+          top: 0;
+          z-index: 2;
+        }
+
+        .date-pill {
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(8px);
+          border: 1px solid var(--color-border);
+          color: var(--color-muted-foreground);
+          font-size: var(--size-micro);
+          font-weight: var(--weight-semibold);
+          padding: 6px 14px;
+          border-radius: var(--radius-full);
+          box-shadow: var(--shadow-sm);
+        }
+
+        /* Bubble Row styles */
+        .bubble-row {
+          display: flex;
+          flex-direction: column;
+          margin-bottom: 2px;
+          animation: bubbleFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .bubble-row.customer {
+          align-items: flex-start;
+          padding-right: 20%;
+        }
+
+        .bubble-row.ai,
+        .bubble-row.vendor {
+          align-items: flex-end;
+          padding-left: 20%;
+        }
+
+        .bubble-meta-header {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-bottom: 4px;
+          font-size: var(--size-micro);
+        }
+
+        .confidence-tag {
+          font-size: 8px;
+          background: rgba(37, 211, 102, 0.12);
+          color: var(--color-primary-text);
+          padding: 1px 5px;
+          border-radius: 4px;
+          font-weight: 700;
+        }
+
+        .bubble-card {
+          position: relative;
+          padding: 10px 14px;
+          border-radius: var(--radius-xl);
+          font-size: 13.5px;
+          line-height: 1.5;
+          white-space: pre-wrap;
+          word-break: break-word;
+          box-shadow: var(--shadow-sm);
+          border: 1px solid var(--color-border);
+        }
+
+        .customer .bubble-card {
+          background-color: #FFFFFF;
+          color: var(--color-foreground);
+          border-top-left-radius: 4px;
+        }
+
+        .ai .bubble-card {
+          background-color: var(--color-primary-surface);
+          color: var(--color-foreground);
+          border: 1px solid var(--color-primary-border);
+          border-top-right-radius: 4px;
+        }
+
+        .vendor .bubble-card {
+          background-color: #EEF2F6;
+          color: var(--color-foreground);
+          border: 1px solid #D0D7DE;
+          border-top-right-radius: 4px;
+        }
+
+        .bubble-meta-footer {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 3px;
+          font-size: var(--size-micro);
+          color: var(--color-muted-foreground);
+        }
+
+        .vendor .bubble-meta-footer,
+        .ai .bubble-meta-footer {
+          justify-content: flex-end;
+        }
+
+        /* Input layout */
+        .input-panel {
+          padding: var(--space-4) var(--space-5);
+          border-top: 1px solid var(--color-border);
+          background-color: #FFFFFF;
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-2);
+        }
+
+        .input-container {
+          display: flex;
+          gap: var(--space-3);
+          align-items: flex-end;
+        }
+
+        .chat-input {
+          flex: 1;
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-xl);
+          padding: 12px var(--space-4);
+          font-size: var(--size-body-sm);
+          line-height: 1.4;
+          outline: none;
+          background-color: var(--color-background);
+          color: var(--color-foreground);
+          font-family: inherit;
+          resize: none;
+          max-height: 120px;
+          transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+          border-color: var(--color-primary);
+          background-color: #FFFFFF;
+          box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.08);
+        }
+
+        .chat-send-btn {
+          width: 44px;
+          height: 44px;
+          border-radius: var(--radius-full);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: none;
+          background-color: var(--color-primary);
+          color: #FFFFFF;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          flex-shrink: 0;
+          box-shadow: var(--shadow-sm);
+        }
+
+        .chat-send-btn:hover:not(:disabled) {
+          background-color: var(--color-primary-dark);
+          transform: scale(1.05);
+        }
+
+        .chat-send-btn:disabled {
+          background-color: var(--color-muted-foreground);
+          opacity: 0.4;
+          cursor: default;
+        }
+
+        .input-disclaimer {
+          font-size: var(--size-micro);
+          color: var(--color-muted-foreground);
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          padding-left: var(--space-1);
+        }
+
+        /* Empty states & Errors */
+        .empty-state {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          background-color: var(--color-background);
+          padding: var(--space-8);
+          gap: var(--space-4);
+        }
+
+        .empty-graphic {
+          width: 80px;
+          height: 80px;
+          border-radius: var(--radius-full);
+          background-color: #FFFFFF;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: var(--shadow-sm);
+          border: 1px solid var(--color-border);
+        }
+
+        .empty-title {
+          font-size: var(--size-h3);
+          font-weight: var(--weight-bold);
+          color: var(--color-foreground);
+        }
+
+        .empty-subtitle {
+          font-size: var(--size-body-sm);
+          color: var(--color-muted-foreground);
+          text-align: center;
+          max-width: 280px;
+          line-height: 1.5;
+        }
+
+        .error-banner {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 50;
+          background-color: var(--color-destructive-surface);
+          border-bottom: 1px solid var(--border-error);
+          padding: 10px var(--space-5);
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          font-size: var(--size-body-sm);
+          color: var(--color-destructive);
+          animation: slideDown 0.3s ease;
+        }
+
+        .error-close-btn {
+          margin-left: auto;
+          background: none;
+          border: none;
+          color: var(--color-destructive);
+          cursor: pointer;
+          font-size: var(--size-h2);
+          line-height: 1;
+        }
+
+        @keyframes bubbleFadeIn {
+          from { opacity: 0; transform: translateY(6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideDown {
+          from { transform: translateY(-100%); }
+          to { transform: translateY(0); }
+        }
+
         @media (max-width: 768px) {
-          .c-sidebar { width: 100% !important; position: absolute !important; top: 0; left: 0; right: 0; bottom: 0; z-index: 10; display: none !important; }
-          .c-sidebar.show { display: flex !important; }
-          .c-main { width: 100% !important; position: absolute !important; top: 0; left: 0; right: 0; bottom: 0; display: none !important; }
-          .c-main.show { display: flex !important; }
-          .chat-back { display: flex !important; }
+          .chat-sidebar {
+            width: 100% !important;
+            position: absolute !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none !important;
+          }
+          .chat-sidebar.show {
+            display: flex !important;
+          }
+          .chat-main {
+            width: 100% !important;
+            position: absolute !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none !important;
+          }
+          .chat-main.show {
+            display: flex !important;
+          }
+          .back-btn {
+            display: flex !important;
+          }
         }
       `}</style>
     </div>

@@ -10,5 +10,11 @@
   },
   "env": {
     "NEXT_PHASE": "build"
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/whatsapp/health",
+      "schedule": "*/15 * * * *"
+    }
+  ]
 }

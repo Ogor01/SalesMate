@@ -71,7 +71,7 @@ export function SidebarNav() {
   );
 }
 
-export function SidebarProfile({ businessName, vendorName, vendorEmail }: { businessName: string; vendorName: string; vendorEmail: string }) {
+export function SidebarProfile({ businessName, vendorName, vendorEmail, whatsappConnected }: { businessName: string; vendorName: string; vendorEmail: string; whatsappConnected?: boolean }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -121,7 +121,7 @@ export function SidebarProfile({ businessName, vendorName, vendorEmail }: { busi
           >
             {vendorName.charAt(0)}
           </div>
-          <div style={{ overflow: "hidden" }}>
+          <div style={{ overflow: "hidden", flex: 1 }}>
             <div
               style={{
                 fontSize: "var(--size-body)",
@@ -129,9 +129,23 @@ export function SidebarProfile({ businessName, vendorName, vendorEmail }: { busi
                 textOverflow: "ellipsis",
                 overflow: "hidden",
                 whiteSpace: "nowrap",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
               }}
             >
               {businessName}
+              <span
+                title={whatsappConnected ? "WhatsApp connected" : "WhatsApp disconnected"}
+                style={{
+                  width: "7px",
+                  height: "7px",
+                  borderRadius: "50%",
+                  backgroundColor: whatsappConnected ? "#10B981" : "#EF4444",
+                  display: "inline-block",
+                  flexShrink: 0,
+                }}
+              />
             </div>
             <div
               style={{
@@ -142,7 +156,7 @@ export function SidebarProfile({ businessName, vendorName, vendorEmail }: { busi
                 whiteSpace: "nowrap",
               }}
             >
-              {vendorEmail}
+              {whatsappConnected ? "WhatsApp Online" : "WhatsApp Offline"}
             </div>
           </div>
         </div>

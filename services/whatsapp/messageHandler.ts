@@ -72,7 +72,7 @@ export async function handleIncomingWhatsAppMessage(
       console.error("Failed to escalate conversation after critical error:", dbError);
     }
 
-    dispatchSystemEvent(userId, "escalation_triggered", {
+    void dispatchSystemEvent(userId, "escalation_triggered", {
       phone: customerPhone,
       reason: "Critical handler error — see server logs",
     });
