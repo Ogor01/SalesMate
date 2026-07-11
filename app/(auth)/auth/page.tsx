@@ -353,6 +353,12 @@ function AuthContent() {
             ))}
           </div>
 
+          {error && (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "var(--space-2)", padding: "var(--space-3)", textAlign: "center", background: "var(--color-destructive-surface)", border: "var(--border-error)", borderRadius: "var(--radius-lg)", color: "var(--color-destructive)", fontSize: "var(--size-caption)", width: "100%", maxWidth: step === 2 ? "500px" : "720px", marginBottom: "var(--space-2)" }}>
+              <span>{error}</span>
+            </div>
+          )}
+
           <div style={{ width: "100%", maxWidth: step === 2 ? "500px" : "720px", background: "#FFFFFF", borderRadius: "var(--radius-xl)", padding: "var(--space-6)", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
             {/* STEP 1: BUSINESS INFO */}
             {step === 2 && (
@@ -585,12 +591,6 @@ function AuthContent() {
         {/* FORGOT PASSWORD */}
         {authMode === "login" && showForgot && !forgotSent && !resetToken && (
           <form onSubmit={handleForgotPassword} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-            {error && (
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-3)", background: "var(--color-destructive-surface)", border: "var(--border-error)", borderRadius: "var(--radius-lg)", color: "var(--color-destructive)", fontSize: "var(--size-caption)" }}>
-                <AlertCircle size={16} />
-                <span>{error}</span>
-              </div>
-            )}
             <p style={{ fontSize: "var(--size-caption)", color: "var(--color-muted-foreground)", lineHeight: "1.4" }}>
               Enter your email address and we'll send you a link to reset your password.
             </p>
@@ -628,12 +628,6 @@ function AuthContent() {
         {/* RESET PASSWORD */}
         {authMode === "login" && resetToken && !forgotSent && (
           <form onSubmit={handleResetPassword} style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
-            {error && (
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-3)", background: error.includes("successfully") ? "var(--color-primary-surface)" : "var(--color-destructive-surface)", border: error.includes("successfully") ? "var(--border-success)" : "var(--border-error)", borderRadius: "var(--radius-lg)", color: error.includes("successfully") ? "var(--color-primary-text)" : "var(--color-destructive)", fontSize: "var(--size-caption)" }}>
-                <AlertCircle size={16} />
-                <span>{error}</span>
-              </div>
-            )}
             <p style={{ fontSize: "var(--size-caption)", color: "var(--color-muted-foreground)", lineHeight: "1.4" }}>
               Enter your new password below.
             </p>
