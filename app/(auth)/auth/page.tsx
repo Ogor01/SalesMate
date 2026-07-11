@@ -668,12 +668,6 @@ function AuthContent() {
         {/* REGISTER FORM */}
         {authMode === "register" && (
           <div>
-            {error && (
-              <div style={{ display: "flex", alignItems: "center", gap: "var(--space-2)", padding: "var(--space-3)", background: "var(--color-destructive-surface)", border: "var(--border-error)", borderRadius: "var(--radius-lg)", color: "var(--color-destructive)", fontSize: "var(--size-caption)", marginBottom: "var(--space-4)" }}>
-                <AlertCircle size={16} />
-                <span>{error}</span>
-              </div>
-            )}
             {regStep === 1 && (
               <div style={{ display: "flex", flexDirection: "column", gap: "var(--space-4)" }}>
                 <div>
