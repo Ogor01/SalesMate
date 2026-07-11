@@ -6,7 +6,6 @@ import {
   Users,
   TrendingUp,
   AlertCircle,
-  ArrowUpRight,
   ChevronRight,
   Sparkles,
 } from "lucide-react";

@@ -85,10 +85,10 @@ export async function POST(req: Request) {
 
     if (targetUserId) {
       handleIncomingWhatsAppMessage(targetUserId, from, messageText, mediaUrl, origin).catch((err) => {
-        console.error(`Error processing webhook message from ${from}:`, err);
+        console.error("Error processing webhook message:", err);
       });
     } else {
-      console.warn(`Webhook received message but no vendor matches Twilio number: ${to}`);
+      console.warn("Webhook received message but no vendor matches Twilio number");
     }
 
     return new Response("<Response></Response>", {

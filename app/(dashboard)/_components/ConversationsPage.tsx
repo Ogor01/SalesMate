@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   Search, Loader, AlertCircle, Send, User, RefreshCw,
   CheckCheck, MoreVertical, Bot, MessageSquare, Smartphone,
-  ArrowLeft, Phone, Clock, ShieldAlert, Sparkles, UserCheck
+  ArrowLeft, ShieldAlert, Sparkles, UserCheck
 } from "lucide-react";
 
 interface ChatMessage {
@@ -95,7 +95,7 @@ export default function ConversationsPage() {
           }
         }
       }
-    } catch {} finally {
+    } catch { setError("Failed to load conversations."); } finally {
       setLoading(false);
     }
   };
@@ -124,7 +124,7 @@ export default function ConversationsPage() {
           toggleEscalation: next
         })
       });
-    } catch {}
+    } catch { setError("Failed to update conversation status."); }
   };
 
   const sendMsg = async (e: React.FormEvent) => {

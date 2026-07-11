@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  BookOpen, Plus, Loader, AlertCircle, HelpCircle, Trash2, CheckCircle,
+  BookOpen, Plus, Loader, AlertCircle, HelpCircle, CheckCircle,
 } from "lucide-react";
 
 interface FAQ { id: string; question: string; answer: string; }
@@ -31,14 +31,39 @@ export default function KnowledgeBasePage() {
     finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchFaqs(); }, []);
+  useEffect(() => {
+    fetchFaqs();
+    fetch("/api/business/profile").then((r) => r.json()).then((json) => {
+      const d = json.data || json;
+      if (d.deliveryPolicy) setDeliveryDetails(d.deliveryPolicy);
+      if (d.paymentPolicy) setPaymentDetails(d.paymentPolicy);
+      if (d.returnPolicy) setReturnDetails(d.returnPolicy);
+    }).catch(() => {});
+  }, []);
 
-  const handleSavePolicies = () => {
+  const handleSavePolicies = async () => {
     setSubmitting(true); setSuccessMsg(""); setError("");
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/business/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          deliveryPolicy: deliveryDetails,
+          paymentPolicy: paymentDetails,
+          returnPolicy: returnDetails,
+        }),
+      });
+      if (res.ok) {
+        setSuccessMsg("Store policies saved and updated in AI training prompt successfully!");
+      } else {
+        const json = await res.json();
+        setError(json.error?.message || "Failed to save policies.");
+      }
+    } catch {
+      setError("Network error saving policies.");
+    } finally {
       setSubmitting(false);
-      setSuccessMsg("Store policies saved and updated in AI training prompt successfully!");
-    }, 800);
+    }
   };
 
   const handleAddFaq = async (e: React.FormEvent) => {

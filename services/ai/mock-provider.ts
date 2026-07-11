@@ -1,5 +1,5 @@
 import { AiProvider, AiChatMessage } from "./types";
-import { PrismaClient } from "@prisma/client";
+import { db } from "@/lib/db";
 
 export class MockAiProvider implements AiProvider {
   async generateChatCompletion(params: {
@@ -9,7 +9,7 @@ export class MockAiProvider implements AiProvider {
   }): Promise<{ text: string; error?: string }> {
     const msg = params.userMessage.toLowerCase();
 
-    const prisma = new PrismaClient();
+    const prisma = db;
 
     let vendorUserId: string | null = null;
     let products: any[] = [];
@@ -30,8 +30,6 @@ export class MockAiProvider implements AiProvider {
       }
     } catch (err) {
       console.error("Mock provider init error:", err);
-    } finally {
-      await prisma.$disconnect();
     }
 
     const hasImage = params.history.some((h) => h.mediaUrl);

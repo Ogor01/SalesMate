@@ -4,13 +4,11 @@ import React, { useState } from "react";
 import Link from "next/link";
 import {
   MessageSquare,
-  Search,
-  Users,
-  Cpu,
   Package,
-  Zap,
+  Cpu,
+  Users,
   TrendingUp,
-  UserCheck,
+  Zap,
   Check,
   ArrowRight,
   Menu,

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Users, Search, Loader, AlertCircle, TrendingUp, UserCheck, Check, Eye } from "lucide-react";
+import { Users, Search, Loader, AlertCircle, TrendingUp, UserCheck, Eye } from "lucide-react";
 
 interface Lead { id: string; customerName?: string | null; phoneNumber: string; productInterest?: string | null; leadStatus: "NEW" | "CONTACTED" | "QUALIFIED" | "CONVERTED" | "LOST"; createdAt: string; }
 

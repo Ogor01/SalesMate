@@ -29,7 +29,9 @@ export async function POST(req: Request) {
     const result = await sendPasswordResetEmail(email, resetLink, user.businessName);
 
     if (!result.success) {
-      console.warn(`[Forgot Password] Email send failed for ${email}, link logged: ${resetLink}`);
+      if (process.env.NODE_ENV === "development") {
+        console.log(`[DEV] Password reset link for ${email}: ${resetLink}`);
+      }
     }
 
     return NextResponse.json({ message: "Reset link sent." });

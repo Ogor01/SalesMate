@@ -71,7 +71,7 @@ export async function extractAndSaveLeadIntent(
 
     // 2. Guess customer name (look for common intros: "i am", "my name is", "call me")
     let guessedName: string | undefined;
-    const nameMatch = chatText.match(/(?:my name is|i am|call me)\s+([a-z0-name]{3,15})/i);
+    const nameMatch = chatText.match(/(?:my name is|i am|call me)\s+([a-z]{3,15})/i);
     if (nameMatch && nameMatch[1]) {
       guessedName = nameMatch[1].charAt(0).toUpperCase() + nameMatch[1].slice(1);
     }

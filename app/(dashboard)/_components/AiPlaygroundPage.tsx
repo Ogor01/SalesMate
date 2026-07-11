@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { Send, Loader, AlertCircle, Bot, RefreshCw, MessageSquare, Info } from "lucide-react";
+import { Send, Loader, AlertCircle, Bot, RefreshCw, MessageSquare } from "lucide-react";
 
 interface ChatBubble {
   role: "customer" | "ai";

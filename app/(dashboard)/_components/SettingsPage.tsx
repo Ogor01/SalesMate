@@ -11,29 +11,69 @@ export default function SettingsPage() {
   const [authToken, setAuthToken] = useState("");
   const [twilioPhoneNumber, setTwilioPhoneNumber] = useState("");
   const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
 
   useEffect(() => {
-    setBusinessName("Adeola Ready-to-Wear");
-    setFullName("Adeola Johnson");
-    setEmail("adeola@fashionhouse.com");
-    setAccountSid("ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    setAuthToken("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx");
-    setTwilioPhoneNumber("+14155238886");
+    const loadData = async () => {
+      try {
+        const [profileRes, whatsappRes] = await Promise.all([
+          fetch("/api/settings/profile"),
+          fetch("/api/settings/whatsapp"),
+        ]);
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          const d = profile.data || profile;
+          setBusinessName(d.businessName || "");
+          setFullName(d.fullName || "");
+          setEmail(d.email || "");
+        }
+        if (whatsappRes.ok) {
+          const w = await whatsappRes.json();
+          const d = w.data || w;
+          setAccountSid(d.accountSid || d.account_sid || "");
+          setAuthToken(d.authToken ? "••••••••" : "");
+          setTwilioPhoneNumber(d.twilioPhoneNumber || d.twilio_phone_number || "");
+        }
+      } catch {
+        // Silently fail — fields stay empty for user to fill
+      } finally {
+        setFetching(false);
+      }
+    };
+    loadData();
+    setWebhookUrl(`${window.location.origin}/api/whatsapp/webhook`);
   }, []);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setSuccess(""); setError("");
-    setTimeout(() => { setLoading(false); setSuccess("Profile settings updated successfully!"); }, 600);
+    try {
+      const res = await fetch("/api/settings/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessName, fullName, email }),
+      });
+      if (res.ok) {
+        setSuccess("Profile settings updated successfully!");
+      } else {
+        const json = await res.json();
+        setError(json.error?.message || "Failed to save profile.");
+      }
+    } catch {
+      setError("Network error saving profile.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSaveTwilioConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true); setSuccess(""); setError("");
-    if (!accountSid || !authToken || !twilioPhoneNumber) {
-      setError("Please fill in all Twilio credentials."); setLoading(false); return;
+    if (!accountSid || !twilioPhoneNumber) {
+      setError("Account SID and phone number are required."); setLoading(false); return;
     }
     try {
       const res = await fetch("/api/settings/whatsapp", {
@@ -46,6 +86,14 @@ export default function SettingsPage() {
     } catch { setError("Network error saving configuration."); }
     finally { setLoading(false); }
   };
+
+  if (fetching) {
+    return (
+      <div style={{ padding: "var(--space-6)", display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+        <Loader size={24} className="animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: "var(--space-6)", display: "flex", flexDirection: "column", gap: "var(--space-5)", overflowY: "auto", height: "100vh" }}>
@@ -82,7 +130,7 @@ export default function SettingsPage() {
             <input type="text" placeholder="Twilio WhatsApp Number (e.g. +14155238886)" className="input-field" value={twilioPhoneNumber} onChange={(e) => setTwilioPhoneNumber(e.target.value)} required />
             <div style={{ background: "var(--color-background)", border: "var(--border-default)", borderRadius: "var(--radius-lg)", padding: "10px", fontSize: "11px", color: "var(--color-muted-foreground)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--color-primary-text)" }}><Link2 size={12} /> Webhook URL</div>
-              <div style={{ fontFamily: "var(--font-mono)", background: "#FFFFFF", padding: "4px", border: "1px solid rgba(0,0,0,0.06)", borderRadius: "4px", userSelect: "all", marginTop: "4px" }}>https://salesmate.vercel.app/api/whatsapp/webhook</div>
+              <div style={{ fontFamily: "var(--font-mono)", background: "#FFFFFF", padding: "4px", border: "1px solid rgba(0,0,0,0.06)", borderRadius: "4px", userSelect: "all", marginTop: "4px" }}>{webhookUrl || "https://your-domain.vercel.app/api/whatsapp/webhook"}</div>
             </div>
             <button type="submit" className="btn-primary" style={{ width: "fit-content", marginTop: "var(--space-3)" }} disabled={loading}>
               {loading ? <Loader size={16} className="animate-spin" /> : "Save Twilio Config"}
