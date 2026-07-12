@@ -67,7 +67,7 @@ export const {
     },
   },
   pages: {
-    signIn: "/login",
+    signIn: "/auth?mode=login",
   },
   session: {
     strategy: "jwt",
