@@ -70,17 +70,21 @@ export async function POST(req: Request) {
       targetUserId = config?.userId || null;
     }
 
-    // Fallback: try env var Twilio number (single-tenant backward compat)
-    if (!targetUserId && rawTo === process.env.TWILIO_WHATSAPP_NUMBER) {
-      const userWithProducts = await db.product.findFirst({
-        select: { userId: true },
-      });
-      if (userWithProducts) {
-        targetUserId = userWithProducts.userId;
-      } else {
-        const firstUser = await db.user.findFirst({ select: { id: true } });
-        targetUserId = firstUser?.id || null;
+    // Fallback: try env var Twilio number
+    if (!targetUserId) {
+      if (process.env.TWILIO_WHATSAPP_NUMBER) {
+        const envNumber = process.env.TWILIO_WHATSAPP_NUMBER.replace(/^whatsapp:/, "");
+        if (rawTo === envNumber) {
+          const firstUser = await db.user.findFirst({ select: { id: true } });
+          targetUserId = firstUser?.id || null;
+        }
       }
+    }
+
+    // Last resort: grab any user (single-vendor mode)
+    if (!targetUserId) {
+      const firstUser = await db.user.findFirst({ select: { id: true } });
+      targetUserId = firstUser?.id || null;
     }
 
     if (targetUserId) {
@@ -88,7 +92,7 @@ export async function POST(req: Request) {
         console.error("Error processing webhook message:", err);
       });
     } else {
-      console.warn("Webhook received message but no vendor matches Twilio number");
+      console.warn("Webhook received message but no vendor found in database");
     }
 
     return new Response("<Response></Response>", {
